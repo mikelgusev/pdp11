@@ -1,0 +1,3288 @@
+	.DSABL	GBL
+	.REM	/
+************************
+
+јШеР ігбХТ.
+¤¤¤¤¤¤¤¤¤¤¤
+
+НвЮ ШбеЮФЭШЪ пЧлЪР ДѕАВ.
+
+************************
+/
+
+
+;ДЫРЦЪШ ФЫп гбЫЮТЭЮЩ ЪЮЬЯШЫпжШШ
+;¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤
+f$word	=	1	;ТлТЮФ бЫЮТРап ЭР нЪаРЭ
+f$dump	=	1	;ТлТЮФ ФРЬЯР ЯРЬпвШ ЭР нЪаРЭ
+f$d	=	0	;аРСЮвР б зШбЫРЬШ ФТЮЩЭЮЩ ФЫШЭЭл
+f$dot	=	0	;дЮаЬРвЭлЩ ТлТЮФ зШбХЫ
+f$draw	=	0	;ЯЮвЮзХзЭРп УаРдШЪР
+f$bmp	=	0	;СШвЬнЯЮТлХ ЯХаХблЫЪШ
+f$pk	=	1	;pk11/16 methods
+f$bug	=	1	;debugger
+f$uk	=	0	;especial for uknc
+
+
+
+;ДЫРЦЪШ Т ЯЮЫХ дЫРЦЪЮЬ ЧРУЮЫЮТЪР бЫЮТР
+;¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤
+b$immediate	=	1
+b$smudge	=	2
+b$shield	=	4
+
+
+;ГЯаРТЫпойШХ ЪЮЬРЭФл, аРСЮвРойШХ б иШвлЬ ЪЮФЮЬ
+;¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤
+pcode	=	4437
+nex	=	134
+
+
+;БблЫЪР ЭР ЯаХФлФгйХХ бЫЮТЮ
+;¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤
+pred$$ 	= 	0
+
+
+;јРЪаЮЮЯаХФХЫХЭШп ФЫп ЮЯаХФХЫХЭШп ЧРУЮЫЮТЪЮТ бЫЮТ
+;¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤
+	.macro	def xn,xa,xi=0	;ЮЯаХФХЫХЭШХ б аРЧФХЫмЭлЬШ ШЬХЭРЬШ
+	.word	0
+$'xn:	.asciz	\xa\
+	.even
+	.word	pred$$,xi
+xn:	pred$$=$'xn
+	.endm
+
+	.macro	defc xn,xi=0	;ЮЯаХФХЫХЭШХ б ЮФШЭРЪЮТлЬШ ШЬХЭРЬШ
+	def	xn,xn,xi
+	.endm
+
+;АХУШбвал ЪЫРТШРвгал, ЯаШЭвХаР, нЪаРЭР
+;¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤
+$kbrcsr		= 177560
+$kbrdat		= 177562
+$scrcsr		= 177564
+$scrdat		= 177566
+$lpccsr		= 177514
+$lpcdat		= 177516
+
+;ѕЯаХФХЫХЭШХ ЧЭРзХЭШЩ РСбЮЫовЭле пзХХЪ ЯРЬпвШ
+;¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤
+	.asect
+	.=0
+	.word	40000,104350	;ФЫп ЯХаХЧРЯгбЪР
+	.=44
+	.word	41410		;бЫЮТЮ бЮбвЮпЭШп ЯаЮУаРЬЬл
+	.=4020
+
+;ТлТХбвШ бваЮЪг б ЯХаХТЮФЮЬ Ш ТЮЧТаРвЮЬ ЪРаХвЪШ
+;бваЮЪР-> %0
+;¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤
+princr:	call	print
+	mov	#15,r0
+	call	ttyout
+	mov	#12,r0
+	call	ttyout
+	return
+
+
+;ТлТХбвШ бваЮЪг
+;бваЮЪР-> %0
+;¤¤¤¤¤¤¤¤¤¤¤¤¤¤
+print:	mov	r1,-(sp)
+	mov	r0,r1
+1$:	movb	(r1)+,r0
+	beq	2$
+	call	ttyout
+	br	1$
+2$:	mov	(sp)+,r1
+	return
+
+;ЯЮШбЪ ЪЮЭжР бваЮЪШ Ш ТлаРТЭШТРЭШХ
+;нвЮУЮ РФаХбР ЯЮ УаРЭШжХ бЫЮТР.
+;бваЮЪР-> %3
+;¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤
+aeven:	tstb	(r3)+
+	bne	aeven
+	inc	r3
+	asr	r3
+	asl	r3
+	return
+
+;ТлТЮФ бШЬТЮЫР
+;бШЬТЮЫ -> %0
+;¤¤¤¤¤¤¤¤¤¤¤¤¤
+ttyout:	tst	.ttycsr
+	bpl	2$
+
+	;ТлТЮФ ЯЮ аХУШбваРЬ
+	;¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤
+	bic	#^c377,r0
+1$:	tstb	@.ttycsr
+	bpl	1$
+	mov	r0,@.ttydat
+	return
+
+	;ТлТЮФ Т ЪРЭРЫ
+	;¤¤¤¤¤¤¤¤¤¤¤¤¤
+2$:	mov	r4,-(sp)
+	mov	r3,-(sp)
+	mov	r2,-(sp)
+	mov	r1,-(sp)
+	mov	r0,-(sp)
+	mov	r0,-(r5)
+	mov	.ttycsr,-(r5)
+	pcode
+	.word	putbyt,er,next
+	mov	(sp)+,r0
+	mov	(sp)+,r1
+	mov	(sp)+,r2
+	mov	(sp)+,r3
+	mov	(sp)+,r4
+	return
+
+;бСаЮб ЪРЭРЫЮТ, бЮбвЮпЭШп, ТТЮФР
+;¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤
+cloch:	clr	.state
+	clr	.iodir
+	mov	#-1,.inch
+	clr	r0
+	emt	374
+	bcs	1$
+	mov	#3*400,r0
+	emt	374
+1$:	nex
+
+;ёЭШжШРЫШЧРжШп бШбвХЬл ЯаШ ЧРЯгбЪХ ШЫШ аХбвРавХ
+;¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤
+def	init,<initialize>
+begn:				;ВЮзЪР ТеЮФР Т ЯаЮУаРЬЬг.
+	mov	.rstack,sp	;SP=1400 - бвХЪ ТЮЧТаРвЮТ
+	mov	.dstack,r5	;R5=4000 - бвХЪ ФРЭЭле
+	.word	pcode,cloch,base0,base,to,stdtty
+subs:	.word	smsg,csispc,inter,init
+
+
+;БШбвХЬЭлХ ЯЮФЯаЮУаРЬЬл
+;””””””””””””””””””””””
+
+;бФХЫРвм вХЪгйШЩ ЪЮЭвХЪбв ЪЮаЭХТлЬ
+;¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤
+defc	core
+	mov	.rstack,sp
+	mov	.dstack,r5
+	nex
+
+;ІЮЧТаРв ШЧ ЪЮФЮТЮЩ ТбвРТЪШ Т РббХЬСЫХаЭЮХ ЮЯа.
+;¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤
+defc	next
+	rts	r4
+
+;їЮЫгзШвм РФаХб вЮзЪШ ЯЮФЬХЭл ШЭвХаЯаХвРвЮаР
+;¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤
+defc	entryptr
+	mov	#subs,-(r5)
+	nex
+
+;ІлеЮФ СХЧ ЮзШбвЪШ бвХЪР ФРЭЭле
+;¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤
+defc	quit
+	mov	.rstack,sp	;БвХЪ ТЮЧТаРвЮТ = 1400
+	.word	pcode,cloch,stdtty,base0,base,to,inter,abort
+
+;ІлеЮФ б ЮзШбвЪЮЩ бвХЪР ФРЭЭле
+;¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤
+defc	abort
+	.word	pcode,dstack,tosp,quit
+
+
+;·РТХаиХЭШХ ТлЯЮЫЭХЭШп ЪЮФЮТЮУЮ бЫЮТР
+;¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤
+defc	exit
+	mov	(sp)+,r4
+	nex
+
+;їЮШбЪ Т бЫЮТРаХ бШбвХЬл бЫЮТР
+;<РФаХб бваЮЪШ> ->
+;-> <cfa ШЫШ 0>
+;¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤
+defc	search
+	mov	.last,r3
+1$:	mov	(r5),r2
+	mov	r3,.nfa
+2$:	cmpb	(r3),(r2)+
+	beq	4$
+	call	aeven
+6$:	mov	(r3),r3
+	bne	1$
+	mov	(r5),.nfa
+	clr	(r5)
+	br	5$
+4$:	tstb	(r3)+
+	bne	2$
+	inc	r3
+	asr	r3
+	asl	r3
+	bit	#b$smudge,2(r3)	;smudge?
+	bne	6$
+	tst	.defence
+	beq	100$
+	bit	#b$shield,2(r3)
+	beq	6$
+100$:	cmp	(r3)+,(r3)+
+	mov	r3,(r5)
+5$:	mov	(r5),.cfa
+	nex
+
+;ЅРзРЫмЭЮХ бЮЮСйХЭШХ бШбвХЬл
+;¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤
+defc	smsg
+	mov	#1$,r0
+	call	princr
+	nex
+1$:	.ascii	<15><12>
+	.ascii	'--------------------------------'<15><12>
+	.ascii	'- (C) Mikhail Gusew 1993 FORTH -'<15><12>
+	.asciz	'--------------------------------'<15><12>
+	.even
+
+;ІлеЮФ Т бШбвХЬг
+;¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤
+defc	stop
+	emt	350
+
+.if ne f$word
+
+;ІлТЮФ бЯШбЪР бЫЮТ бШбвХЬл Т ЮФШЭ бвЮЫСХж
+;¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤
+defc	words
+	bic	#100,@#$kbrcs
+	mov	#23.,r2
+	mov	.last,r3
+1$:	dec	r2
+	bne	2$
+	tstb	@#$kbrcsr
+	bpl	.-4
+	cmp	#3,@#$kbrdat
+	beq	4$
+	mov	#23.,r2
+2$:	mov	r3,r0
+	call	princr
+	call	aeven
+	mov	(r3),r3
+	bne	1$
+4$:	bis	#100,@#$kbrcsr
+	nex
+
+;ІлТЮФ бЯШбЪР бШбвХЬл Т ЭХбЪЮЫмЪЮ бвЮЫСжЮТ
+;¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤
+defc	vlist
+	bic	#100,@#$kbrcsr
+	mov	r4,-(sp)
+	clr	r4
+	mov	#23.,r2
+	mov	.last,r3
+1$:	tst	r4
+	bne	2$
+	dec	r2
+	bne	2$
+	tstb	@#$kbrcsr
+	bpl	.-4
+	cmp	#3,@#$kbrdat
+	beq	4$
+	mov	#23.,r2
+2$:	movb	(r3)+,r0
+	beq	3$
+	inc	r4
+	call	ttyout
+	br	2$
+3$:	mov	r4,-(sp)
+	bic	#17,r4
+	add	#20,r4
+	cmp	#100,r4
+	bgt	5$
+	clr	r4
+	mov	#15,r0
+	call	ttyout
+	mov	#12,r0
+	call	ttyout
+	br	6$
+5$:	bic	#^C17,(sp)
+	sub	#20,(sp)
+	neg	(sp)
+7$:	tst	(sp)
+	beq	6$
+	dec	(sp)
+	mov	#40,r0
+	call	ttyout
+	br	7$
+6$:	clr	(sp)+
+	inc	r3
+	bic	#1,r3
+	mov	(r3),r3
+	bne	1$
+4$:	mov	(sp)+,r4
+	bis	#100,@#$kbrcsr
+	nex
+.endc
+
+.rem	%
+-- ВХЪбв ШЭвХаЯаХвРвЮаР, ЭЮ ЭР ДЮавХ
+: interpret
+begin
+	-- ЯаЮТХаЪР ЭР ШбзХаЯРЭШХ бвХЪР
+	sp@ d0 > 1 ?error
+
+	-- ТТЮФ бЫХФгойХУЮ бЫЮТР
+	bl word dup search ?dup
+	ifnot
+		-- БЫЮТЮ ЭХ ЭРЩФХЭЮ, зШбЫЮ ?
+		number ifnot
+			0 message quit
+		else
+			dpl @ 1+ if
+				dliteral
+			else
+				drop literal
+			then
+		then
+	else
+		-- БЫЮТЮ ЭРЩФХЭЮ, ШбЯЮЫЭШвм ШЫШ бЪЮЬЯ. ?
+		press dup 2+ @
+		1 and not state @ 1 and and if
+			,
+		else
+			execute
+	then
+again ;
+
+%
+
+;ёЭвХаЯаХвРвЮа бШбвХЬл
+;¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤
+def	inter,<interpret>
+	.word	pcode
+1$:	.word	atsp,dstack,gt,c1,qerr
+	.word	bl,word,dup
+	.word	search,qdup
+	.word	nqbr,6$
+	.word	number
+	.word	nqbr,4$
+        .word	zero,msg,quit
+4$:	.word	dpl,at,incr,qbr,5$
+        .word	dliteral,branch,1$
+5$:	.word	drop,literal,branch,1$
+6$:	.word	press,dup,decr2,at
+	.word	c1,and,not
+	.word	state,at,c1,and,and
+	.word	qbr,10$
+	.word	zap,branch,1$
+10$:	.word	exec,branch,1$
+
+
+;ГбвРЭЮТЪР бШбвХЬ бзШбЫХЭШп
+;¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤
+.macro	$tmp$	name,a,osnowa
+	def	name,<a>
+	mov	#osnowa,.base
+	nex
+.endm
+	$tmp$	octal,octal,8.
+	$tmp$	decim,decimal,10.
+	$tmp$	hex,hex,16.
+	$tmp$	bin,bin,2.
+.mdelet	$tmp$
+
+;ГбвРЭЮТЪР аХУШбваЮТ ТлТЮФР
+;¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤
+defc	stdtty
+	mov	#$scrcsr,.ttycsr
+	mov	#$scrdat,.ttydat
+	nex
+
+;ІлТЮФ ЭР ЯаШЭвХа ТЬХбвЮ нЪаРЭР
+;¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤
+defc	lpctty
+	mov	#$lpccsr,.ttycsr
+	mov	#$lpcdat,.ttydat
+	nex
+
+;ІлТЮФ Т дРЩЫ ЯЮ ЪРЭРЫг
+;¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤
+defc	chntty
+	mov	(r5)+,.ttycsr
+	nex
+
+
+.if ne f$dump & f$d
+
+;ґРЬЯ ЯРЬпвШ
+;<РФаХб,ФЫШЭЭР> ->
+;¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤
+defc	dump			;ІеЮФ: РФаХб,ФЫШЭЭР
+	.word	pcode
+	.word	base,at,mrot,dup,lit,10,mod,lit,10,swap,minus
+	.word	lit,10,mod,plus,over,plus,swap,hqdo,2$
+1$:	.word	octal,i,hdump,lit,10,hploop,1$
+2$:	.word	base,to,exit
+emi:	pcode
+	.word	lit,'Ґ,emit,fspace,exit
+dumpc:	pcode
+	.word	lit,10,zero,hqdo,2$
+1$:	.word	dup,i,plus,atb				;lit,177,and
+	.word	dup,lit,37,gt				;over,lit,177,lt,and
+	.word	nqbr,3$,drop,lit,'.
+3$:	.word	emit,hloop,1$
+2$:	.word	exit
+dumph:	pcode
+	.word	lit,4,zero,hex,hqdo,1$
+2$:	.word	dup,i,umn2,plus,at,zero
+	.word	bcnv,cnv,cnv,cnv,cnv,ecnv
+	.word	drop,outstr,fspace,hloop,2$
+1$:	.word	exit
+hdump:	pcode
+	.word	dup,zero,lit,6,ddtr,fspace,emi
+	.word	lit,4,zero,hqdo,1$
+2$:	.word	dup,i,umn2,plus,at,zero
+	.word	bcnv,cnv,cnv,cnv,cnv,cnv,cnv,ecnv
+	.word	drop,outstr,fspace,hloop,2$
+1$:	.word	emi,dumpc,fspace,emi,dumph,drop,emi,cr,exit
+.endc
+
+
+;єЮЭбвРЭвл Ш ЯХаХЬХЭЭлХ бШбвХЬл
+;””””””””””””””””””””””””””””””
+defc	ttycsr
+	mov	(pc)+,-(r5)
+	.ttycsr: .word	177564
+	nex
+defc	ttydat
+	mov	(pc)+,-(r5)
+	.ttydat: .word	177566
+	nex
+
+;ЪЮЭбвРЭвР ТХаиШЭл бвХЪР ФРЭЭле
+;¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤
+def	dstack,<s0>
+	mov	(pc)+,-(r5)
+	.dstack: .word	4000
+	nex
+
+;ЪЮЭбвРЭвР ТХаиШЭл бвХЪР ТЮЧТаРвЮТ
+;¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤
+def	rstack,<r0>
+	mov	(pc)+,-(r5)
+	.rstack: .word	1400
+	nex
+
+;ЪЮЭбвРЭвР ЮбЭЮТРЭШп бзШбЫХЭШп ЯЮ гЬЮЫзРЭШо
+;¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤
+defc	base0
+	mov	(pc)+,-(r5)
+	.base0:	.word	8.
+	nex
+
+;ЯХаХЬХЭЭРп бЮбвЮпЭШп бШбвХЬл
+;=0 - ШЭвХаЯаХвРжШп / =1 - ЪЮЬЯШЫпжШп
+;¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤
+defc	state
+	jsr	r4,vardoes
+.state:	.word	0
+
+
+;ЯХаХЬХЭЭРп гЪРЧлТРойРп ЭР ЭЮЬХа ЧРУагЦРХЬЮУЮ ЪРЭРЫР
+;¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤
+defc	inch
+	jsr	r4,vardoes
+.inch:	.word	0
+
+
+;ЪЮЭбвРЭвл зШбХЫ
+;¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤
+def	zero,<0>
+	clr	-(r5)
+	nex
+def	c1,<1>
+	mov	#1,-(r5)
+	nex
+def	c2,<2>
+	mov	#2,-(r5)
+	nex
+def	c3,<3>
+	mov	#3,-(r5)
+	nex
+def	c4,<4>
+	mov	#4,-(r5)
+	nex
+def	c7,<7>
+	mov	#7,-(r5)
+	nex
+def	cm1,<-1>
+	mov	#-1,-(r5)
+	nex
+def	cm2,<-2>
+	mov	#-2,-(r5)
+	nex
+def	cm3,<-3>
+	mov	#-3,-(r5)
+	nex
+def	cm4,<-4>
+	mov	#-4,-(r5)
+	nex
+
+;ЯХаХЬХЭЭРп ТХаиШЭл бЫЮТРап
+;¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤
+defc	h
+	jsr	r4,vardoes
+.h:	.word	endvoc
+
+;ЯХаХЬХЭЭРп - гЪРЧРвХЫм ЭР nfa ЯЮбЫХФЭХУЮ ЮЯа. бЫЮТР
+;¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤
+defc	last
+	jsr	r4,vardoes
+.last:	.word	endwrd
+
+;ЯХаХЬХЭЭРп - вХЪгйРп бШбвХЬР бзШбЫХЭШп
+;¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤
+defc	base
+	jsr	r4,vardoes
+.base:	.word	8.
+
+
+;ЯХаХЬХЭЭРп - ЮвЪгФР ШФХв ТТЮФ
+;0= - б ЪЫРТШРвгал / =1 - ШЧ дРЩЫР
+;¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤
+defc	iodir
+	jsr	r4,vardoes
+.iodir:	.word	0
+
+;const bl
+;¤¤¤¤¤¤¤¤
+defc	bl
+	mov	#32.,-(r5)
+	nex
+
+;const quote
+;¤¤¤¤¤¤¤¤¤¤¤
+defc	quote
+	mov	#34.,-(r5)
+	nex
+
+;ЯХаХЬХЭЭРп б ЭРЩФХЭЭлЬ cfР
+;¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤
+defc	cfa
+	jsr	r4,vardoes
+.cfa:	.word	0
+
+;ЯХаХЬХЭЭРп б ЭРЩФХЭЭлЬ nfa
+;¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤
+defc	nfa
+	jsr	r4,vardoes
+.nfa:	.word	0
+
+;ЯХаХЬХЭЭРп б ЯЮЧШжШХЩ ФХб.вЮзЪШ
+;¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤
+defc	dpl
+	jsr	r4,vardoes
+.dpl:	.word	0
+
+
+;ѕЯаХФЫпойШХ бЫЮТР бШбвХЬл
+;”””””””””””””””””””””””””
+def	reg,<region>
+	pcode
+	.word	create,compil,4437,compil,regdoes,exit
+	regdoe:
+	vardoe:
+	mov	r4,-(r5)
+	mov	(sp)+,r4
+	nex
+
+def	var,<variable>
+	pcode
+	.word	reg,zero,zap,exit
+
+.if ne f$d
+def	dvar,<"variable>
+	pcode
+	.word	var,zero,zap,exit
+
+def	dconst,<"constant>
+	pcode
+	.word	create,compil,12745,swap,zap,compil,12745,zap,compil,134,exit
+
+def	dqto,<"to>,1
+	pcode
+	.word	shtr,incr2,dup,incr2,incr2,state,at,qbr,2$
+	.word	compil,1$,zap,compil,1$,zap,exit
+2$:	.word	next
+	mov	4(r5),@(r5)+
+	mov	4(r5),@(r5)+
+	cmp	(r5)+,(r5)+
+	nex
+1$:	mov	(r5)+,@(r4)+
+	nex
+
+def	at2,<"@>
+	mov	(r5)+,r0
+	mov	(r0)+,-(r5)
+	mov	(r0),-(r5)
+	nex
+
+def	to2,<"!>
+	mov	(r5)+,r0
+	mov	(r5)+,2(r0)
+	mov	(r5)+,(r0)
+	nex
+
+def	dpto,<"+!>
+	mov	(r5)+,r0
+	add	2(r5),(r0)+
+	adc	(r0)
+	add	(r5)+,(r0)
+	tst	(r5)+
+	nex
+
+def	dmto,<"-!>
+	mov	(r5)+,r0
+	sub	2(r5),(r0)+
+	sbc	(r0)
+	sub	(r5)+,(r0)
+	tst	(r5)+
+	nex
+
+def	dpto1,<"1+!>
+	mov	(r5)+,r0
+	add	#1,(r0)+
+	adc	(r0)
+	nex
+
+def	dmto1,<"1-!>
+	mov	(r5)+,r0
+	sub	#1,(r0)+
+	sbc	(r0)
+	nex
+
+def	dzto,<"0!>
+	mov	(r5)+,r0
+	clr	(r0)+
+	clr	(r0)
+	nex
+
+.endc
+
+def	const,<constant>
+	pcode
+	.word	create,compil,12745,zap,compil,134,exit
+
+def	qto,<to>,1
+	pcode
+	.word	shtr,incr2,state,at,qbr,2$
+	.word	compil,1$,zap,exit
+2$:	.word	to,exit
+1$:	mov	(r5)+,@(r4)+
+	nex
+
+;ЯХаХблЫЪР бЫЮТРЬШ
+;a1,a2,n->
+;¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤
+defc	move
+	mov	(r5)+,r3
+	mov	(r5)+,r2
+	mov	(r5)+,r1
+	tst	r3
+	beq	2$
+1$:	mov	(r1)+,(r2)+
+	sob	r3,1$
+2$:	nex
+
+;ЯХаХблЫЪР СРЩвРЬШ
+;a1,a2,n->
+;¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤
+defc	cmove
+	mov	(r5)+,r3
+	mov	(r5)+,r2
+	mov	(r5)+,r1
+	tst	r3
+	beq	2$
+1$:	movb	(r1)+,(r2)+
+	sob	r3,1$
+2$:	nex
+
+;ЧРЯЮЫЭХЭШХ ЮСЫРбвШ бЫЮТРЬШ
+;w,n,a->
+;¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤
+defc	fill
+	mov	(r5)+,r3
+	mov	(r5)+,r2
+	mov	(r5)+,r1
+	tst	r2
+	beq	2$
+1$:	mov	r1,(r3)+
+	sob	r2,1$
+2$:	nex
+
+;ЧРЯЮЫЭХЭШХ ЮСЫРбвШ СРЩвРЬШ
+;b,n,a->
+;¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤
+defc	cfill
+	mov	(r5)+,r3
+	mov	(r5)+,r2
+	mov	(r5)+,r1
+	tst	r2
+	beq	2$
+1$:	movb	r1,(r3)+
+	sob	r2,1$
+2$:	nex
+
+def	at,<@>
+	mov	@(r5)+,-(r5)
+	nex
+
+
+def	to,<!>
+	mov	2(r5),@(r5)+
+	tst	(r5)+
+	nex
+
+
+def	pto,<+!>
+	add	2(r5),@(r5)+
+	tst	(r5)+
+	nex
+
+
+def	mto,<-!>
+	sub	2(r5),@(r5)+
+	tst	(r5)+
+	nex
+
+
+def	pto1,<1+!>
+	inc	@(r5)+
+	nex
+
+
+def	mto1,<1-!>
+	dec	@(r5)+
+	nex
+
+
+def	zto,<0!>
+	clr	@(r5)+
+	nex
+
+
+def	eto,<1!>
+	mov	#1,@(r5)+
+	nex
+
+def	atb,<c@>
+	clr	r0
+	bisb	@(r5)+,r0
+	mov	r0,-(r5)
+	nex
+
+def	tob,<c!>
+	movb	2(r5),@(r5)+
+	tst	(r5)+
+	nex
+
+def	qd,<?>
+	pcode
+	.word	at,outi,exit
+
+;ГбЫЮТШп Ш баРТЭХЭШп
+;”””””””””””””””””””
+.if ne f$d
+def	deqz,<"0=>
+	pcode
+	.word	or,eqz,exit
+
+def	dnqz,^/"0<>/
+	pcode
+	.word	deqz,not,exit
+
+def	deq,<"=>
+	pcode
+	.word	dminus,or,eqz,exit
+
+def	dnnq,^/"<>/
+	pcode
+	.word	deq,eqz,exit
+
+def	dlowz,^/"0</
+	tst	(r5)+
+	bmi	ist
+	bne	lov
+	br	lowz
+
+def	dgtz,^'"0>'
+	pcode
+	.word	dneg,dlowz,exit
+
+def	dlt,^/"</
+	pcode
+	.word	dminus,dlowz,exit
+
+def	dgt,^'">'
+	pcode
+	.word	dminus,dgtz,exit
+
+.endc
+
+def	eqz,<0=>
+	tst	(r5)
+	beq	1$
+	clr	(r5)
+	br	2$
+1$:	mov	#-1,(r5)
+2$:	nex
+
+def	nnqz,^/0<>/
+	pcode
+	.word	eqz,not,exit
+
+def	eq,<=>
+	pcode
+	.word	minus,eqz,exit
+
+
+def	noneq,^/<>/
+	pcode
+	.word	eq,eqz,exit
+
+def	lowz,^/0</
+	tst	(r5)
+	blt	ist
+lov:	clr	(r5)
+	nex
+ist:	mov	#-1,(r5)
+	nex
+
+def	ugt,^/u>/
+	cmp	(r5)+,(r5)
+	blo	ist
+	br	lov
+
+def	ult,^/u</
+	cmp	(r5)+,(r5)
+	bhi	ist
+	br	lov
+
+def	gtz,^'0>'
+	pcode
+	.word	negate,lowz,exit
+
+def	lt,^/</
+	pcode
+	.word	minus,lowz,exit
+
+
+def	gt,^/>/
+	pcode
+	.word	minus,gtz,exit
+
+
+;°аШдЬХвШзХбЪШХ ЮЯХаРжШШ
+;”””””””””””””””””””””””
+
+.if ne f$d
+def	dplus,<"+>
+	add	2(r5),6(r5)
+	adc	4(r5)
+	add	(r5)+,2(r5)
+	tst	(r5)+
+	nex
+
+def	dminus,<"->
+	pcode
+	.word	dneg,dplus,exit
+
+def	dneg,<"negate>
+	neg	(r5)
+	neg	2(r5)
+	sbc	(r5)
+	nex
+
+def	dumn2,<"2*>
+	asl	2(r5)
+	rol	(r5)
+	nex
+
+def	ddel2,<"2/>
+	asr	(r5)
+	ror	2(r5)
+	nex
+
+def	dlsh,^'"<<'
+	mov	(r5)+,r2
+	mov	(r5)+,r0
+	mov	(r5),r1
+	ashc	r2,r0
+	mov	r1,(r5)
+	mov	r0,-(r5)
+	nex
+
+def	dabs,<"abs>
+	pcode
+	.word	dup,lowz,qbr,1$,dneg
+1$:	.word	exit
+
+def	stod,^'s->d'
+	mov	(r5),-(r5)
+	sxt	(r5)
+	nex
+.endc
+
+def	plus,<+>
+	add	(r5)+,(r5)
+	nex
+
+
+def	minus,<->
+	sub	(r5)+,(r5)
+	nex
+
+
+defc	negate
+	neg	(r5)
+	nex
+
+
+def	umn2,<2*>
+	asl	(r5)
+	nex
+
+
+def	del2,<2/>
+	asr	(r5)
+	nex
+
+
+def	lsh,^/<</
+	mov	(r5)+,r0
+	mov	(r5),r1
+	ash	r0,r1
+	mov	r1,(r5)
+	nex
+
+
+def	umn,<*>
+	mov	(r5)+,r1
+	mul	(r5),r1
+	mov	r1,(r5)
+	nex
+
+def	del,</>
+	mov	2(r5),r0
+	mov	r0,r1
+	sxt	r0
+	mov	2(r5),r1
+	div	(r5)+,r0
+	mov	r0,(r5)
+	nex
+
+def	delm,</mod>
+	mov	2(r5),r0
+	mov	r0,r1
+	sxt	r0
+	div	(r5)+,r0
+	mov	r1,(r5)
+	mov	r0,-(r5)
+	nex
+
+defc	mod
+	mov	2(r5),r0
+	mov	r0,r1
+	sxt	r0
+	mov	2(r5),r1
+	div	(r5)+,r0
+	mov	r1,(r5)
+	nex
+
+defc	umod
+	mov	2(r5),r0
+	mov	r0,r1
+	sxt	r0
+	mov	2(r5),r1
+	mov	(r5)+,r2
+	div	r2,r0
+	mov	r1,(r5)
+	bpl	1$
+	add	r2,(r5)
+1$:	nex
+
+
+defc	and
+	com	(r5)
+	bic	(r5)+,(r5)
+	nex
+
+defc	or
+	bis	(r5)+,(r5)
+	nex
+
+defc	not
+	com	(r5)
+	nex
+
+defc	xor
+	mov	(r5)+,r0
+	xor	r0,(r5)
+	nex
+
+def	incr,<1+>
+	inc	(r5)
+	nex
+
+def	decr,<1->
+	dec	(r5)
+	nex
+
+def	incr2,<2+>
+	add	#2,(r5)
+	nex
+
+def	decr2,<2->
+	sub	#2,(r5)
+	nex
+
+defc	abs
+	tst	(r5)
+	bpl	1$
+	neg	(r5)
+1$:	nex
+
+
+defc	min
+	mov	(r5)+,r0
+	cmp	r0,(r5)
+	bge	1$
+	mov	r0,(r5)
+1$:	nex
+
+defc	umin
+	mov	(r5)+,r0
+	cmp	r0,(r5)
+	bhis	1$
+	mov	r0,(r5)
+1$:	nex
+
+defc	max
+	mov	(r5)+,r0
+	cmp	r0,(r5)
+	ble	1$
+	mov	r0,(r5)
+1$:	nex
+
+defc	umax
+	mov	(r5)+,r0
+	cmp	r0,(r5)
+	blos	1$
+	mov	r0,(r5)
+1$:	nex
+
+def	umdel,<*/>
+	mov	4(r5),r0
+	mul	2(r5),r0
+	div	(r5)+,r0
+	tst	(r5)+
+	mov	r0,(r5)
+	nex
+
+def	umdem,<*/mod>
+	mov	4(r5),r0
+	mul	2(r5),r0
+	div	(r5)+,r0
+	mov	r0,(r5)
+	mov	r1,2(r5)
+	nex
+
+def	uumdem,<*/umod>
+	mov	4(r5),r0
+	mul	2(r5),r0
+	mov	(r5)+,r2
+	div	r2,r0
+	mov	r0,(r5)
+	mov	r1,2(r5)
+	bpl	1$
+	add	r2,2(r5)
+	dec	(r5)
+1$:	nex
+
+def	uumn,<m*>
+	mov	(r5),r0
+	mul	2(r5),r0
+	mov	r0,(r5)
+	mov	r1,2(r5)
+	nex
+
+def	udel,<m/>
+	mov	(r5)+,r2
+	mov	(r5)+,r0
+	mov	(r5),r1
+	div	r2,r0
+	mov	r0,(r5)
+	nex
+
+def	ummod,<um/mod>
+	mov	(r5)+,r2
+	mov	(r5)+,r0
+	mov	(r5)+,r1
+	div	r2,r0
+	mov	r1,-(r5)
+	mov	r0,-(r5)
+	nex
+
+def	umumod,<um/umod>
+	mov	(r5)+,r2
+	mov	(r5)+,r0
+	mov	(r5)+,r1
+	div	r2,r0
+	tst	r1
+	bpl	1$
+	add	r2,r1
+	dec	r0
+1$:	mov	r1,-(r5)
+	mov	r0,-(r5)
+	nex
+
+def	mmmod,<m/mod>
+	mov	(r5)+,r3
+	clr	r0
+	mov	(r5)+,r1
+	div	r3,r0		;r0=h/d  r1=h%d
+	tst	r1
+	bpl	1$
+	add	r3,r1
+	dec	r0
+1$:	mov	r0,r2
+	mov	r1,r0
+	mov	(r5)+,r1
+	div	r3,r0		;r0=hl/d r1=%
+	tst	r1
+	bpl	2$
+	add	r3,r1
+	dec	r0
+2$:	mov	r1,-(r5)
+	mov	r0,-(r5)
+	mov	r2,-(r5)
+	nex
+
+
+def	swb,<swab>
+	swab	(r5)
+	nex
+
+;АРСЮвР бЮ бвХЪЮЬ
+;””””””””””””””””
+
+defc	depth
+	pcode
+	.word	dstack,atsp,incr2,minus,del2,exit
+
+defc	dup
+	mov	(r5),-(r5)
+	nex
+
+defc	drop
+	add	#2,r5
+	nex
+
+def	rpush,^'>r'
+	mov	(r5)+,-(sp)
+	nex
+
+def	rpop,^'r>'
+	mov	(sp)+,-(r5)
+	nex
+
+def	rcopy,<r@>
+	mov	(sp),-(r5)
+	nex
+
+defc	rdrop
+	tst	(sp)+
+	nex
+
+def	dcopy,<r=>
+	mov	(r5),-(sp)
+	nex
+
+;a,b --> a,b,a
+defc	over
+	mov	2(r5),-(r5)
+	nex
+
+;a,b --> b,a
+defc	swap
+	mov	2(r5),r0
+	mov	(r5),2(r5)
+	mov	r0,(r5)
+	nex
+
+;a<>0: a --> a,a ;   a=0: a --> a
+def	qdup,<?dup>
+	tst	(r5)
+	beq	1$
+	mov	(r5),-(r5)
+1$:	nex
+
+;a,b,c --> b,c,a
+defc	rot
+	mov	(r5),r0
+	mov	4(r5),(r5)
+	mov	2(r5),4(r5)
+	mov	r0,2(r5)
+	nex
+
+;a,b,c --> c,a,b
+def	mrot,<-rot>
+	mov	(r5),r0
+	mov	2(r5),(r5)
+	mov	4(r5),2(r5)
+	mov	r0,4(r5)
+	nex
+
+.if ne f$d
+def	dover,<"over>
+	mov	6(r5),-(r5)
+	mov	6(r5),-(r5)
+	nex
+
+def	ddrop,<"drop>
+	add	#4,r5
+	nex
+
+def	dswap,<"swap>
+	mov	4(r5),r0
+	mov	6(r5),r1
+	mov	(r5)+,2(r5)
+	mov	(r5)+,2(r5)
+	mov	r1,-(r5)
+	mov	r0,-(r5)
+	nex
+
+def	ddup,<"dup>
+	mov	2(r5),-(r5)
+	mov	2(r5),-(r5)
+	nex
+.endc
+
+defc	pick
+	mov	(r5)+,r0
+	add	r0,r0
+	add	r5,r0
+	mov	(r0),-(r5)
+	nex
+
+defc	rpick
+	mov	(r5)+,r0
+	add	r0,r0
+	add	sp,r0
+	mov	(r0),-(r5)
+	nex
+
+defc	press
+	mov	(r5)+,(r5)
+	nex
+
+def	atsp,<sp@>
+	mov	r5,r0
+	mov	r0,-(r5)
+	nex
+
+def	tosp,<sp!>
+	mov	(r5),r5
+	nex
+
+def	sdot,<s.>
+	pcode
+	.word	depth,qdup
+	.word	qbr,1$
+	.word	zero,hqdo,1$
+2$:	.word	i,pick,souti,hloop,2$
+1$:	.word	exit
+
+
+;ДЮаЬРвЭлЩ ТлТЮФ зШбХЫ
+;”””””””””””””””””””””
+
+.if ne f$dot
+
+defc	hld
+	jsr	r4,vardoes
+	.hld:	.word	0
+
+defc	pad
+	mov	#1$,-(r5)
+	nex
+	.blkb	50.
+1$:	.word	0,0
+
+def	bcnv,^/<#/
+	pcode
+	.word	pad,hld,to,exit
+
+def	cnv,<#>
+	pcode
+	.word	base,at,mmmod,rot,lit,t3$,plus,atb,hold,exit
+
+defc	hold
+	mov	.hld,r0
+	dec	.hld
+	movb	(r5)+,(r0)
+	inc	r5
+	nex
+
+def	scnv,<#s>
+	pcode
+1$:	.word	cnv,over,over,or,nqbr,1$,exit
+
+def	ecnv,^'#>'
+	pcode
+	.word	drop,drop,hld,at,pad,over,minus,swap,incr,swap,exit
+
+defc	sign
+	pcode
+	.word	rot,lowz,qbr,1$,lit,'-,hold
+1$:	.word	exit
+
+def	dtr,<.r>
+	pcode
+	.word	rpush,stod,rpop,ddtr,exit
+
+def	ddtr,<".r>
+	pcode
+	.word	rpush,swap,over,dabs,bcnv,scnv,sign,ecnv
+	.word	rpop,over,minus,spaces,drop,outstr,exit
+
+def	ddt,<".>
+	pcode
+	.word	zero,ddtr,fspace,exit
+
+.endc
+
+def	souti,<.>
+	clr	r2
+	tst	(r5)
+	bpl	outi
+	movb	#'-,r2
+	neg	(r5)
+	br	outi+2
+def	outi,<u.>
+	clr	r2
+	clr	-(sp)
+	mov	(r5)+,r0
+1$:	mov	r0,r1
+	clr	r0
+	div	.base,r0
+	movb	t3$(r1),-(sp)
+	tst	r0
+	bne	1$
+	tst	r2
+	beq	4$
+	mov	r2,-(sp)
+4$:	mov	#40,r0
+2$:	call	ttyout
+	mov	(sp)+,r0
+	bne	2$
+	nex
+t3$:	.ascii	/0123456789ABCDEF/
+
+
+;ГЯаРТЫХЭШХ еЮФЮЬ ТлЯЮЫЭХЭШп ЯаЮУаРЬЬл
+;”””””””””””””””””””””””””””””””””””””
+
+;ТХвТЫХЭШХ
+;¤¤¤¤¤¤¤¤¤
+defc	branch
+	mov	(r4),r4
+	nex
+
+def	qbr,<?branch>
+	tst	(r5)+
+	bne	1$
+	mov	(r4),r4
+	br	2$
+1$:	add	#2,r4
+2$:	nex
+
+def	nqbr,<n?branch>
+	tst	(r5)+
+	beq	1$
+	mov	(r4),r4
+	br	2$
+1$:	add	#2,r4
+2$:	nex
+
+;јµВєё
+;¤¤¤¤¤
+defc	label,1
+	pcode
+	.word	bl,word,next
+	clr	r0
+	bisb	@(r5)+,r0
+	asl	r0
+	asl	r0
+	add	#2400-<'A*4>,r0
+	tst	2(r0)
+	bne	3$
+	tst	(r0)
+	bne	1$
+	mov	#1,2(r0)
+	br	4$
+1$:	mov	(r0),@.h
+	br	2$
+3$:	mov	(r0),r0
+	tst	(r0)
+	bne	3$
+4$:	mov	.h,(r0)
+	clr	@.h
+2$:	add	#2,.h
+	nex
+
+def	labq,<label:>,1
+	pcode
+	.word	bl,word,next
+	clr	r0
+	bisb	@(r5)+,r0
+	cmp	#'*,r0
+	bne	2$
+	mov	#2400,r0
+1$:	clr	(r0)+
+	cmp	#3400,r0
+	bne	1$
+	nex
+2$:	asl	r0
+	asl	r0
+	add	#2400-<'A*4>,r0
+	tst	2(r0)
+	bne	3$
+	mov	.h,(r0)
+	nex
+3$:	clr	2(r0)
+4$:	mov	(r0),r1
+	mov	.h,(r0)
+	mov	r1,r0
+	bne	4$
+	nex
+
+;def	hloop,<(loop)>
+hloop:
+	inc	(sp)
+	bvs	1$
+	mov	(r4),r4
+	br	2$
+1$:	add	#6,sp
+	tst	(r4)+
+2$:	nex
+
+;def	hploop,<(+loop)>
+hploop:
+	add	(r5)+,(sp)
+	bvs	1$
+	mov	(r4),r4
+	br	2$
+1$:	add	#6,sp
+	tst	(r4)+
+2$:	nex
+
+;def	hdo,<(do)>
+hdo:
+	mov	#100000,r0
+	mov	(r5)+,r1
+	sub	(r5)+,r0
+	mov	r4,-(sp)
+	tst	(r4)+
+	mov	r0,-(sp)
+	mov	r0,-(sp)
+	add	r1,(sp)
+	nex
+
+;def	hqdo,<(?do)>
+hqdo:
+	cmp	(r5),2(r5)
+	bne	1$
+	add	#4,r5
+	mov	(r4),r4
+	nex
+1$:	mov	#100000,r0
+	mov	(r5)+,r1
+	sub	(r5)+,r0
+	mov	r4,-(sp)
+	tst	(r4)+
+	mov	r0,-(sp)
+	mov	r0,-(sp)
+	add	r1,(sp)
+	nex
+
+defc	i
+	mov	(sp),-(r5)
+	sub	2(sp),(r5)
+	nex
+
+defc	j
+	mov	6(sp),-(r5)
+	sub	10(sp),(r5)
+	nex
+
+defc	k
+	mov	14(sp),-(r5)
+	sub	16(sp),(r5)
+	nex
+
+;0 - вХЪгйШЩ гаЮТХЭм ТЫЮЦХЭЭЮбвШ, 1 - ...
+defc	ii
+	mov	(r5),r1
+	mul	#6,r1
+	add	sp,r1
+	mov	(r1),(r5)
+	sub	2(r1),(r5)
+	nex
+
+defc	leave
+	mov	4(sp),r4
+	mov	(r4),r4
+	add	#6,sp
+	nex
+
+;ЯЮЬХвШвм ЯХаХеЮФ ТЯХаХФ
+;¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤
+def	markw,^'>mark'
+	pcode
+	.word	here,zero,zap,exit
+
+;ЯЮЬХвШвм ЯХаХеЮФ ЭРЧРФ
+;¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤
+def	markn,^'<mark'
+	pcode
+	.word	here,exit
+
+;ЬХбвЮ ФЫп ЯХаХеЮФР ТЯХаХФ
+;¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤
+def	resw,^'>resolve'
+	pcode
+	.word	here,swap,to,exit
+
+;ЬХбвЮ ФЫп ЯХаХеЮФР ЭРЧРФ
+;¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤
+def	resn,^'<resolve'
+	pcode
+	.word	zap,exit
+
+defc	if,1
+	pcode
+	.word	qcomp,compil,qbr,markw,c2,exit
+
+def	ifn,<ifnot>,1
+	pcode
+	.word	qcomp,compil,nqbr,markw,c2,exit
+
+defc	else,1
+	pcode
+	.word	qcomp,c2,qpairs,compil,branch
+	.word	markw,swap,resw,c2,exit
+
+defc	then,1
+	pcode
+	.word	qcomp,c2,qpairs,resw,exit
+
+def	sel,<select>,1
+	pcode
+	.word	qcomp,compil,hsel,zero,here,zero,zap,lit,7,exit
+
+hsel:
+	mov	(r5)+,(r4)+
+	nex
+
+hcas:	pcode
+	.word	qcomp,lit,7,qpairs,swap,incr,swap,exit
+
+def	selt,<selector>,1
+	pcode
+	.word	qcomp,over,compile,lit,zap,compile,at,exit
+
+defc	case,1
+	pcode
+	.word	selt,hcas,compile,eq,rpush,rpush,if,rpop,rpop
+	.word	lit,77,exit
+
+defc	diap,1
+	pcode
+	.word	selt,hcas,cm2,allot,compile,1$,rpush,rpush
+	.word	ifn,rpop,rpop,lit,77,exit
+1$:	pcode
+	.word	at,swap,over,lt,mrot,gt,or,exit
+
+defc	true,1
+	pcode
+	.word	hcas,rpush,rpush,if,rpop,rpop,lit,77,exit
+
+defc	ecase,1
+	pcode
+	.word	qcomp,lit,77,qpairs,rpush,rpush,else,rpop,rpop,lit,7,exit
+
+def	esel,<eselect>,1
+	pcode
+	.word	qcomp,lit,7,qpairs,drop,zero,hdo,2$
+1$:	.word	then,hloop,1$
+2$:	.word	exit
+
+defc	begin,1
+	pcode
+	.word	qcomp,markn,c1,exit
+
+defc	again,1
+	pcode
+	.word	qcomp,c1,qpairs,compil,branch,resn,exit
+
+defc	do,1
+	pcode
+	.word	qcomp,compil,hdo,markw,markn,lit,3,exit
+
+def	qdo,<?do>,1
+	pcode
+	.word	qcomp,compil,hqdo,markw,markn,lit,3,exit
+
+defc	loop,1
+	pcode
+	.word	qcomp,lit,3,qpairs,compil,hloop,resn,resw,exit
+
+def	ploop,<+loop>,1
+	pcode
+	.word	qcomp,lit,3,qpairs,compil,hploop,resn,resw,exit
+
+defc	until,1
+	pcode
+	.word	qcomp,c1,qpairs,compil,qbr,resn,exit
+
+defc	while,1
+	pcode
+	.word	qcomp,c1,qpairs,c1,if,incr2,exit
+
+defc	repeat,1
+	pcode
+	.word	qcomp,rpush,rpush,again,rpop,rpop,decr2,then,exit
+
+
+def	crt1q,<crt1=>
+	mov	(r4)+,-(r5)
+	br	xcrt1q
+def	xcrt1q,<=crt1>
+	jsr	r1,crteq
+	.word	300
+	cr1:	0,0,0
+def	crt2q,<crt2=>
+	mov	(r4)+,-(r5)
+	br	xcrt2q
+def	xcrt2q,<=crt2>
+	jsr	r1,crteq
+	.word	400
+	cr2:	0,0,0
+def	crtnq,<crtn=>
+	mov	(r4)+,-(r5)
+	br	xcrtnq
+def	xcrtnq,<=crtn>
+	jsr	r1,crteq
+	.word	200
+	cr0:	0,0,0
+crteq:	mov	(r1)+,(sp)
+	mov	(r5)+,r0
+	tst	(r0)+
+	mov	r0,(r1)+
+	mov	r5,(r1)
+	sub	(sp),(r1)+
+	mov	sp,(r1)
+	sub	(sp)+,(r1)
+	nex
+
+defc	crt1
+	mov	#cr1,r1
+	br	crt
+defc	crt2
+	mov	#cr2,r1
+	br	crt
+defc	crtn
+	mov	#cr0,r1
+crt:	mov	r4,r0
+	mov	(r1),r4
+	mov	r0,(r1)+
+	mov	r5,r0
+	mov	(r1),r5
+	mov	r0,(r1)+
+	mov	sp,r0
+	mov	(r1),sp
+	mov	r0,(r1)
+	nex
+
+def	tt1c,^'>c1'
+	mov	#cr1+2,r1
+	br	ttc
+
+def	tt2c,^'>c2'
+	mov	#cr2+2,r1
+	br	ttc
+
+def	ttoc,^'>c'
+	mov	#cr0+2,r1
+ttc:	mov	(r1),r0
+	mov	(r5)+,-(r0)
+	mov	r0,(r1)
+	nex
+
+def	fr1c,^'c1>'
+	mov	#cr1+2,r1
+	br	frc
+
+def	fr2c,^'c2>'
+	mov	#cr2+2,r1
+	br	frc
+
+def	froc,^'c>'
+	mov	#cr0+2,r1
+frc:	mov	(r1),r0
+	mov	(r0)+,-(r5)
+	mov	r0,(r1)
+	nex
+
+def	m1rkq,<mark1=>
+	jsr	r1,mrkq
+	$$cr1:	0,0,0
+
+def	m2rkq,<mark2=>
+	jsr	r1,mrkq
+	$$cr2:	0,0,0
+
+def	markq,<mark=>
+	jsr	r1,mrkq
+	$$cr0:	0,0,0
+mrkq:	tst	(sp)+
+	mov	(r4)+,r0
+	tst	(r0)+
+	mov	r0,(r1)+
+	mov	r5,(r1)+
+	mov	sp,(r1)+
+	nex
+
+
+defc	back1
+	mov	#$$cr1,r1
+	br	bck
+
+defc	back2
+	mov	#$$cr2,r1
+	br	bck
+
+defc	back
+	mov	#$$cr0,r1
+bck:	mov	(r1)+,r4
+	mov	(r1)+,r5
+	mov	(r1)+,sp
+	nex
+
+
+
+;ЯаЮТХаЪР бЮбвЮпЭШЩ
+;””””””””””””””””””
+
+;(v,n-) ХбЫШ v вЮ ЮиШСЪР(n)
+;¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤
+def	qerr,<?error>
+	pcode
+	.word	swap,qbr,1$,error
+1$:	.word	drop,exit
+
+;ваХСгХвбп ЪЮЬЯШЫпжШп
+;¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤
+def	qcomp,<?comp>
+	pcode
+	.word	state,at,lit,1,and,eqz,lit,21.,qerr,exit
+
+;ваХСгХвбп ТлЯЮЫЭХЭШХ
+;¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤
+def	qexec,<?exec>
+	pcode
+	.word	state,at,lit,1,and,lit,22.,qerr,exit
+
+;ваХСгХвбп бЮТЯРФХЭШХ бЪЮСЮЪ
+;¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤
+def	qpairs,<?pairs>
+	pcode
+	.word	minus,lit,23.,qerr,exit
+
+
+
+;ґЮЯЮЫЭШвХЫмЭлХ бЫЮТР
+;””””””””””””””””””””
+
+defc	lit
+	mov	(r4)+,-(r5)
+	nex
+
+defc	dlit
+	mov	(r4)+,r0
+	mov	(r4)+,-(r5)
+	mov	r0,-(r5)
+	nex
+
+defc	here
+	mov	.h,-(r5)
+	nex
+
+defc	allot
+	add	(r5)+,.h
+	nex
+
+;бЮЧФРвм бЫЮТЮ ЯЮ ШЬХЭШ ШЧ бвХЪР
+;¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤
+def	cre,<(create)>
+	mov	.h,r3
+	mov	.last,r0
+	clr	(r3)+
+	mov	r3,.last
+	mov	(r5)+,r2
+1$:	movb	(r2)+,(r3)+
+	bne	1$
+	inc	r3
+	bic	#1,r3
+	mov	r0,(r3)+
+	clr	(r3)+
+	mov	r3,.h
+	nex
+
+;ЯЮЫЮЦШвм ЭР бвХЪ РФаХб бваЮЪШ,бЪЮЬЯШЫШаЮТРЭЭЮЩ ЭР бЫЮТРаХ
+;¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤
+def	hquo,<(")>
+	mov	r4,-(r5)
+	add	#2,(r5)
+	add	(r4),r4
+	nex
+
+;аРбЯХзРвРвм бваЮЪг,бЪЮЬЯШЫШаЮТРЭЭго ЭР бЫЮТРаХ
+;¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤
+def	hdquo,<(.")>
+	mov	r4,r0
+	add	#2,r0
+	call	print
+	add	(r4),r4
+	nex
+
+;бЮЧФРвм бЫЮТЮ ЯЮ ШЬХЭШ ШЧ ТеЮФЭЮУЮ ЯЮвЮЪР
+;¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤
+defc	create
+	pcode
+	.word	bl,word,dup		;(str-addr,str-addr)
+	.word	search			;(str-addr,cfa)
+	.word	qbr,1$,lit,4,msg
+1$:	.word	cre,exit
+
+;бЪЮЬЯШЫШаЮТРвм ЭР бЫЮТРам зШбЫЮ, ШФгйХХ ЯЮбЫХ нвЮУЮ Т ЪЮФХ
+;¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤
+def	compil,<compile>
+	mov	(r4)+,@.h
+	add	#2,.h
+	nex
+
+def	zap,<,>
+	mov	.h,r0
+	mov	(r5)+,(r0)+
+	mov	r0,.h
+	nex
+
+def	litera,<literal>,1
+	pcode
+	.word	state,at,qbr,1$
+	.word	compil,lit,zap
+1$:	.word	exit
+
+def	dliter,<dliteral>,1
+	pcode
+	.word	state,at,qbr,1$
+	.word	compil,dlit,zap,zap
+1$:	.word	exit
+
+def	imm,<immediate>
+	mov	.last,r0
+1$:	tstb	(r0)+
+	bne	1$
+	add	#3,r0
+	bic	#1,r0
+	bis	#1,(r0)
+	nex
+
+def	cfnf,^'>name'
+	mov	(r5),r0
+	sub	#4,r0
+1$:	tstb	-(r0)
+	beq	1$
+2$:	tstb	-(r0)
+	bne	2$
+	inc	r0
+	mov	r0,(r5)
+	nex
+
+def	nfacfa,^'name>'
+	mov	(r5),r0
+1$:	tstb	(r0)+
+	bne	1$
+	add	#5,r0
+	bic	#1,r0
+	mov	r0,(r5)
+	nex
+
+def	build,^'<build'
+	pcode
+	.word	create,compil,4437,compil,0,exit
+
+
+def	does,^'does>',1
+	pcode
+	.word	compil,htcode
+	.word	compil,10445	;mov	r4,-(r5)	;push	ptr
+	.word	compil,12604	;mov	(sp)+,r4	;rpop	ptr
+	.word	compil,4437	;jsr	r4,@(pc)+	;pcode
+	.word	exit
+
+def	htcode,<(;code)>
+	pcode
+	.word	rpop,last,at,nfacfa,incr2,to,exit
+
+def	setex,<[>,1
+	bic	#1,.state
+	nex
+
+def	setcom,<]>
+	bis	#1,.state
+	nex
+
+def	cq,<c">,1
+	pcode
+	.word	bl,word,atb,literal,exit
+
+def	shtr,<'>
+	pcode
+	.word	bl,word,search,qdup,eqz,zero,qerr,exit
+
+def	ishtr,<[']>,1
+	pcode
+	.word	shtr,literal,exit
+
+defc	smudge,1
+	mov	.last,r3
+	call	aeven
+	mov	#2,r0
+	xor	r0,2(r3)
+	nex
+
+defc	setname
+	mov	.last,r3
+	call	aeven
+	bis	#4,2(r3)
+	nex
+
+defc	defence
+	jsr	r4,vardoes
+.defen:	.word	0
+
+def	sblock,<{>,1
+	.word	pcode
+	.word	qcomp,compil,1$,markw,compil,4437,lit,666,exit
+1$:	mov	r4,-(r5)
+	add	#2,(r5)
+	jmp	@#branch
+
+def	eblock,<}>,1
+	.word	pcode
+	.word	qcomp,lit,666,qpairs,compil,exit,resw,exit
+
+def	proc,<:>,1
+	pcode
+	.word	qexec,create,setcom,compil,4437,exit
+
+def	eproc,<;>,1
+	pcode
+	.word	compil,exit,setex,exit
+
+def	dquot,<.">,1
+	pcode
+	.word	qcomp,compile,hdquo,quote,word,compst,exit
+
+def	quot,<">,1
+	pcode
+	.word	qcomp,compile,hquo,quote,word,compst,exit
+
+;БЪЮЬЯШЫШаЮТРвм бваЮЪг б ХХ ФЫШЭЭЮЩ ЭР бЫЮТРам
+;¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤
+def	compst,<",>	;ІеЮФ: РФаХб бваЮЪШ.
+	clr	r0	;ѕСЭгЫШЬ бзХвзШЪ.
+	mov	.h,r3	;·РЯЮЬЭШЬ бвРалЩ гЪРЧРвХЫм.
+	mov	r3,r2	;
+	mov	(r5)+,r1;ІЮЧмЬХЬ РФаХб бваЮЪШ.
+	add	#2,r2	;·РаХЧХаТШагХЬ ЬХбвЮ ЯЮФ ФЫШЭЭг бваЮЪШ.
+1$:	inc	r0	;їЫоб ЮФШЭ бШЬТЮЫ.
+	cmpb	#'\,(r1);-------;+ІТЮФ бШЬТЮЫР ЯЮ ХУЮ
+	bne	2$		;+ТЮбмЬХаШзЭЮЬг ЪЮФг.
+	inc	r1		;+		
+	cmpb	#'0,(r1)	;+		
+	bhi	2$		;+		
+	cmpb	(r1),#'7	;+		
+	bhi	2$		;+		
+	mov	r5,-(sp)	;+		
+	mov	r4,-(sp)	;+		
+	clr	r4		;+		
+	clr	r5		;+		
+	.rept	3		;+		
+	ash	#3,r5		;+		
+	movb	(r1)+,r4	;+		
+	bic	#^C7,r4		;+		
+	bis	r4,r5		;+		
+	.endr			;+		
+	movb	r5,(r2)+	;+		
+	mov	(sp)+,r4	;+		
+	mov	(sp)+,r5	;+		
+	br	1$		;+		
+2$:	movb	(r1)+,(r2)+	;		
+	bne	1$		;		
+	inc	r2		;-ІлаРТЭШвм бваЮЪг ЯЮ зХвЭЮЬг.
+	bic	#1,r2		;-			
+	mov	r2,.h		;Гбв.ЭЮТлЩ гЪРЧРвХЫм бЫЮТРап.
+	inc	r0		;			
+	bic	#1,r0		;			
+	add	#2,r0		;			
+	mov	r0,(r3)		;·РЯЮЬЭШЬ adr бваЮЪШ.
+	nex			;-----------------------
+
+def	hcomp,<[compile]>,1
+	pcode
+	.word	bl,word,search,qdup,eqz,zero,qerr,zap,exit
+
+def	hforg,<(forget)>
+	pcode
+	.word	search,next
+	tst	(r5)
+	beq	1$
+	mov	.nfa,.h
+	sub	#2,.h
+	mov	.cfa,r0
+	mov	-4(r0),.last
+1$:	nex
+
+defc	forget
+	pcode
+	.word	bl,word,hforg,eqz,lit,21.,qerr,exit
+
+
+; ¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤Ў
+;Ґ АРСЮвР бЮ бваЮЪРЬШ Ґ
+;Ј¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤ў
+defc	len
+	mov	(r5),r0
+	clr	(r5)
+1$:	tstb	(r0)+
+	beq	2$
+	inc	(r5)
+	br	1$
+2$:	nex
+
+
+; ¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤Ў
+;Ґ єЮЯШаЮТРЭШХ бваЮЪШ Т ЯапЬЮЬ ЭРЯаРТЫХЭШШ Ґ
+;Ј¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤ў
+defc	cpystr
+	mov	(r5)+,r2
+	mov	(r5)+,r1
+1$:	movb	(r1)+,(r2)+
+	bne	1$
+	nex
+
+; ¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤Ў
+;Ґ БаРТЭХЭШХ бваЮЪ Ґ
+;Ј¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤ў
+defc	cmpstr
+	mov	(r5)+,r2
+	mov	(r5),r1
+	clr	(r5)
+1$:	cmpb	(r1)+,(r2)+
+	bne	2$
+	tstb	-1(r1)
+	bne	1$
+	com	(r5)
+2$:	nex
+
+
+; ¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤Ў
+;Ґ БаРТЭХЭШХ бваЮЪ Ґ
+;Ј¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤ў
+defc	extstr
+	mov	(r5)+,r2
+	mov	(r5)+,r1
+;БаРТЭШЬ СРЩвШЪШ
+1$:	cmpb	(r1),(r2)
+	bne	2$
+	tstb	(r1)+
+	tstb	(r2)+
+	bne	1$
+	clr	-(r5)
+	nex
+;ЅХаРТЭл
+2$:	tstb	(r2)
+	beq	3$
+	tstb	(r1)
+	beq	4$
+	mov	#-1,-(r5)
+	nex
+;ЅХаРТЭл, ЭЮ ТбХ-вРЪШ ТвЮаРп бваЮЪР ЫХЦШв Т ЯХаТЮЩ
+3$:	mov	#2,-(r5)
+	nex
+;ЅХаРТЭл, ЯХаТРп бваЮЪР ЫХЦШв ТЮ ТвЮаЮЩ
+4$:	mov	#1,-(r5)
+	nex
+
+
+
+defc	patmat
+; ¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤Ў
+;ҐБаРТЭХЭШХ б ЬРбЪЮЩ        Ґ
+;ҐІеЮФ:                     Ґ
+;Ґ	r1 - °ФаХб бваЮЪШ   Ґ
+;Ґ	r2 - °ФаХб ЬРбЪШ    Ґ
+;ҐІлеЮФ:                    Ґ
+;Ґ	C = 0	- OK        Ґ
+;Ґ	C = 1	- NO MATCH  Ґ
+;Ј¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤ў
+	mov	(r5)+,r2
+	mov	(r5),r1
+	clr	(r5)
+	call	pat
+	bcs	1$
+	com	(r5)
+1$:	nex
+
+
+pat:
+   tstb (r2)
+   bne 1$
+   tstb (r1)
+   bne 2$
+5$:tst (pc)+		;match
+2$:sec			;mismatch
+   return
+1$:
+   cmpb #'*,(r2)
+   bne 3$
+      tstb 1(r2)
+      beq 5$
+      inc r2
+7$:
+        cmpb (r1),(r2)
+        beq 9$
+        cmpb #'?,(r2)
+        bne 8$
+9$:      mov r2,-(r5)
+         mov r1,-(r5)
+         cmpb (r1)+,(r2)+
+         call pat
+         mov (r5)+,r1
+         mov (r5)+,r2
+         bcs 8$
+         return
+8$:   inc r1
+      tstb -1(r1)
+      bne 7$
+      br 2$
+3$:
+      tstb (r1)
+      beq 4$
+      cmpb #'?,(r2)
+      beq 6$
+      cmpb (r1),(r2)
+      bne 4$
+6$:     mov r2,-(r5)
+        mov r1,-(r5)
+	cmpb (r1)+,(r2)+
+        call pat
+        mov (r5)+,r1
+        mov (r5)+,r2
+        return
+4$:sec
+   return
+
+
+defc	toupper
+	mov	(r5)+,r1
+1$:	movb	(r1),r0
+	beq	3$
+	bic	#^c177,r0
+	cmp	#'A,r0
+	bhi	2$
+	bic	#40,r0
+2$:	movb	r0,(r1)+
+	br	1$
+3$:	nex
+
+;ТТХбвШ бваЮЪг Т дЮаЬРвХ /String/ 
+;<РФаХб,ЬРЪбШЬ.ФЫШЭЭР>->
+;¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤
+defc	expect
+1$:	call	gttbyt
+	;ЯаЮЯгбЪРХЬ ЮУаЯЭШзШвХЫШ
+	;¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤
+	cmp	#15,r0
+	beq	1$
+	cmp	#12,r0
+	beq	1$
+	cmp	#11,r0
+	beq	1$
+	cmp	#40,r0
+	beq	1$
+	cmp	#14,r0
+	beq	1$
+	mov	r0,-(r5)
+
+	;ЅРзШЭРХЬ СаРвм бваЮЪг  place,maxlen,parser
+	;¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤
+2$:	call	gttbyt
+	mov	r0,r1
+	cmp	(r5),r1
+	bne	11$
+	cmp	(r5)+,(r5)+
+	mov	(r5)+,r0
+	clrb	(r0)
+	nex
+11$:	mov	4(r5),r0
+	inc	4(r5)
+	movb	r1,(r0)
+	dec	2(r5)
+	bne	2$
+
+	;їаЮЯгбЪРХЬ ЮбвРТигобп зРбвм бваЮЪШ
+	;¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤
+	mov	4(r5),r0
+	clrb	(r0)
+3$:	call	gttbyt
+	cmp	r0,(r5)
+	bne	3$
+	add	#6,r5
+	nex
+
+
+;ШбЪРвм бШЬТЮЫ Т бваЮЪХ
+;( бШЬТЮЫ,бваЮЪР )
+;¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤
+defc	finsym
+	mov	(r5),r0
+2$:	tstb	(r0)
+	beq	1$
+	cmpb	2(r5),(r0)+
+	bne	2$
+	mov	r0,(r5)
+1$:	mov	(r5)+,(r5)
+	nex
+
+
+$S:	0
+$L:	0
+$B:	.blkb	100
+
+.rem %
+ШбЪРвм ТЮ ТеЮФЭЮЬ ЯЮвЮЪХ бваЮЪг
+¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤
+-- 1. ЭРеЮФШЬ ФЫШЭЭг бваЮЪШ -> #ФЫ
+-- 2. ЧРУагЦРХЬ Т СгддХа #ФЫ СРЩвЮТ
+-- 3. баРТЭШТРХЬ, ХбЫШ аРТЭЮ, вЮ ЪЮЭХж аРСЮвл
+-- 4. бФТШУРХЬ СгддХа ЭР ЮФШЭ СРЩв
+-- 5. бзШвлТРХЬ ХйХ ЮФШЭ СРЩв ШЭдЮаЬРжШШ
+-- 6. ЯХаХЩвШ ЭР 3.
+¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤ %
+defc	finstr
+.word	pcode
+.word	dup,lit,$S,to,len,dup,lit,$L,to			;-- 1.
+	mov	#$B,r1
+2$:	call	gttbyt
+	movb	r0,(r1)+
+	dec	(r5)
+	bne	2$
+	tst	(r5)+
+1$:	mov	$L,r0		;counter
+	mov	#$B,r1		;string
+	mov	$S,r2		;string
+4$:	cmpb	(r1)+,(r2)+
+	bne	3$
+	sob	r0,4$
+	nex
+3$:	.word	pcode
+.word	lit,$B,dup,incr,swap,lit,$L,at,decr,dup,rpush,cmove
+.word	hgtbt,lit,$B,rpop,plus,tob,next
+	br	1$
+
+;-------------------
+;### аРСЮвР б дРЩЫРЬШ
+;-------------------
+
+def	chdat,<&data>
+..name	=0
+..buff	=10
+..cntr	=12
+..free	=14
+..blck	=16
+..leng	=20
+chdat:
+	mov	(r5),r1
+	mul	#..leng,r1
+	add	#.CHDAT,r1
+	mov	r1,(r5)
+	nex
+
+.chdat:	.rept	16.
+	.rad50	'DK TEST  FTH'
+	.word	0,0,0,0
+	.endr
+
+
+def	setfl,<&file>
+	mov	sp,(pc)+
+2$:	.word	0
+	mov	.h,-(sp)
+	mov	#1$+1,-(sp)
+	mov	#3$,-(sp)
+	mov	(r5)+,-(sp)
+	emt	345
+	mov	2$,sp
+	bcc	4$
+	clr	(r5)
+77$:	nex
+4$:	tstb	@.h
+	beq	77$
+	mov	(r5),r1
+	mul	#..leng,r1
+	add	#.chdat,r1
+	mov	#1$+30.,r0
+	mov	(r0)+,(r1)+
+	mov	(r0)+,(r1)+
+	mov	(r0)+,(r1)+
+	mov	(r0)+,(r1)+
+	mov	#-1,(r5)
+	nex
+3$:	.rad50	/FTHFTHFTHFTH/
+1$:	.blkw	39.
+
+defc	len6
+	mov	#20040,1$
+	mov	#20040,1$+2
+	mov	#20040,1$+4
+	mov	(r5),r0
+	mov	#1$,r2
+	mov	r2,(r5)
+	mov	#6,r1
+2$:	tstb	(r0)
+	beq	3$
+	movb	(r0)+,(r2)+
+	sob	r1,2$
+3$:
+	nex
+1$:
+	.ascii	/123456/<0><0>
+
+def	file,<&>
+	pcode
+	.word	inch,at,incr,bl,word,setfl,qbr,fer1$,load,exit
+fer1$:	.word	stdtty,lit,2$,outstr,abort
+2$:	.asciz	'ѕиШСЪР Т ШЬХЭШ дРЩЫР'
+	.even
+
+defc	csispc
+	mov	#-1,.inch
+	pcode
+	.word	zero,zero,setfl,qbr,1$,load
+1$:	.word	exit
+
+def	setbuf,<&buffer>
+	pcode
+	.word	swap,chdat,lit,..buff,plus,to,exit
+
+def	setblk,<&block>
+	pcode
+	.word	swap,chdat,lit,..blck,plus,to,exit
+
+def	setptr,<&counter>
+	pcode
+	.word	swap,chdat,lit,..blck,plus,to,exit
+
+def	lookup,<&lookup>
+	movb	(r5),1$
+	mov	(r5),r1
+	mul	#..leng,r1
+	add	#.chdat,r1
+	mov	r1,1$+2
+	clr	..cntr(r1)
+	clr	..blck(r1)
+	clr	(r5)
+	mov	#1$,r0
+	emt	375
+	bcs	2$
+	mov	r0,(r5)		;store file length
+2$:	nex
+1$:	.word	400,0,0
+
+def	enter,<&enter>
+	movb	(r5),1$
+	mov	(r5),r1
+	mul	#..leng,r1
+	add	#.chdat,r1
+	mov	r1,1$+2
+	clr	..cntr(r1)
+	clr	..blck(r1)
+	clr	(r5)
+	mov	#1$,r0
+	emt	375
+	bcs	2$
+	com	(r5)
+2$:	nex
+1$:	.word	1000,0,-1,0
+
+def	readw,<&read>
+	movb	(r5),1$
+	mov	(r5),r1
+	mul	#..leng,r1
+	add	#.chdat,r1
+	mov	..buff(r1),1$+4
+	mov	..blck(r1),1$+2
+	clr	(r5)
+	mov	#1$,r0
+	emt	375
+	bcs	2$
+	com	(r5)
+2$:	nex
+1$:	.word	4000,0,0,256.,0
+
+def	writw,<&write>
+	movb	(r5),1$
+	mov	(r5),r1
+	mul	#..leng,r1
+	add	#.chdat,r1
+	mov	..buff(r1),1$+4
+	mov	..blck(r1),1$+2
+	clr	(r5)
+	mov	#1$,r0
+	emt	375
+	bcs	2$
+	com	(r5)
+2$:	nex
+1$:	.word	4400,0,0,256.,0
+
+def	close,<&close>
+	mov	#6*400,r0
+slpur:	bisb	(r5),r0
+	clr	(r5)
+	emt	374
+	bcs	1$
+	com	(r5)
+1$:	nex
+
+def	purge,<&purge>
+	mov	#3*400,r0
+	br	slpur
+
+def	getbyt,<&getbyte>
+	mov	(r5),r1
+	mul	#20,r1
+	add	#.chdat+10,r1
+	mov	r1,-(sp)
+	tst	2(r1)
+	bne	1$
+	pcode
+	.word	readw,next
+	br	3$
+1$:	mov	#-1,(r5)
+3$:	mov	(sp)+,r1
+	mov	(r5),-(r5)
+	mov	(r1),r0
+	add	2(r1),r0
+	clr	2(r5)
+	bisb	(r0),2(r5)
+	inc	2(r1)
+	cmp	#1000,2(r1)
+	bne	4$
+	clr	2(r1)
+	inc	6(r1)
+4$:	nex
+
+def	putbyt,<&putbyte>
+	mov	(r5),r1
+	mul	#20,r1
+	add	#.chdat+10,r1
+	mov	(r1),r0
+	add	2(r1),r0
+	movb	2(r5),(r0)
+	inc	2(r1)
+	mov	(r5)+,(r5)
+	cmp	#1000,2(r1)
+	bne	4$
+	mov	r1,-(sp)
+	pcode
+	.word	writw,next
+	mov	(sp)+,r1
+	clr	2(r1)
+	inc	6(r1)
+	br	5$
+4$:	mov	#-1,(r5)
+5$:	nex
+
+defc	load
+	pcode
+	.word	inch,dup,pto1,at,lookup,qbr,1$
+	.word	inch,at,lit,1400,setbuf,next
+	mov	#1,.iodir
+	nex
+1$:	.word	lit,3$,outstr,abort
+3$:	.asciz	'Open file error'
+	.even
+
+;-------------
+;### ІбпзШЭР
+;-------------
+
+def	exec,<execute>
+	mov	(r5)+,r0
+	beq	2$
+	jmp	(r0)
+2$:	nex
+
+def	fspace,space
+	pcode
+	.word	lit,40,emit,exit
+
+defc	spaces
+	pcode
+	.word	zero,max,zero,hqdo,1$
+2$:	.word	fspace,hloop,2$
+1$:	.word	exit
+
+defc	key
+	emt	340
+	bcs	.-2
+	bic	#^C377,r0
+	mov	r0,-(r5)
+	nex
+
+def	hgtbt,<gtbyte>
+	call	gttbyt
+	mov	r0,-(r5)
+	nex
+gttbyt:
+	tst	.iodir
+	bne	3$
+	emt	340
+	bcs	.-2
+	bic	#^C377,r0
+	return
+3$:	pcode
+	.word	inch,at,getbyt,qbr,4$,next
+	mov	(r5)+,r0
+	return
+4$:	.word	drop,lit,52,atb,qbr,5$
+777$:	.word	stdtty,lit,7$,outstr,abort
+5$:	.word	inch,at,close,drop
+	.word	inch,at,inch,mto1,qbr,88$
+	.word	inch,at,readw,qbr,777$,next
+	br	gttbyt
+88$:	.word	iodir,zto,next
+	br	gttbyt
+7$:	.asciz	"Load Error"
+	.even
+
+defc	word
+	mov	.h,(pc)+
+3$:	.word	0
+	add	#200,3$
+	mov	3$,r3
+1$:
+	call	gttbyt
+	cmpb	r0,(r5)
+	beq	2$
+
+	movb	r0,(r3)+
+	tstb	(r5)
+	beq	4$
+	cmpb	#40,(r5)
+	beq	4$
+	cmpb	#9.,(r5)
+	beq	4$
+	cmpb	#15,(r5)
+	beq	4$
+	cmpb	#12,(r5)
+	bne	1$
+4$:
+	tstb	r0
+	beq	5$
+	cmpb	#40,r0
+	beq	5$
+	cmpb	#9.,r0
+	beq	5$
+	cmpb	#15,r0
+	beq	5$
+	cmpb	#14,r0
+	beq	5$
+	cmpb	#12,r0
+	bne	1$
+5$:
+	dec	r3
+2$:
+	cmp	r3,3$
+	beq	1$
+	clrb	(r3)+
+	mov	3$,(r5)
+	nex
+
+defc	emit
+	mov	(r5)+,r0
+	call	ttyout
+	nex
+
+def	msg,<message>
+	pcode
+	.word	stdtty,nfa,at,outstr,base,at,swap,lit,10.,base,to,hdquo,12
+	.ascii	' msg # '<0>
+	.word	outi,bl,emit,base,to,exit
+
+def	outstr,<type>
+	mov	(r5)+,r0
+	call	print
+	nex
+
+defc	error
+	pcode
+	.word	msg,abort
+
+def	esco,<esc>
+	mov	#33,r0
+	call	ttyout
+	nex
+
+defc	cr
+	pcode
+	.word	lit,12,lit,15,emit,emit,exit
+
+def	comme,<(>,1
+	pcode
+1$:	.word	hgtbt,lit,'),minus,nqbr,1$,exit
+
+def	pcom,<.(>
+	pcode
+1$:	.word	hgtbt,dup,lit,'),minus,nqbr,2$,drop,cr,exit
+2$:	.word	emit,branch,1$
+
+defc	number
+	clr	r0
+	clr	r1
+	clr	11$
+	mov	#-1,.dpl
+	mov	(r5),r2
+1$:	cmpb	#'.,(r2)
+	bne	2$
+	mov	r2,.dpl
+	sub	(r5),.dpl
+	br	10$
+2$:	cmpb	#'-,(r2)
+	bne	6$
+	inc	11$
+	br	10$
+6$:	mov	r0,-(sp)
+	mov	r1,-(sp)
+	mov	.base,r3
+	dec	r3
+3$:	add	(sp),r1
+	adc	r0
+	add	2(sp),r0
+	sob	r3,3$
+	add	#4,sp
+	clr	r3
+	bisb	(r2),r3
+	sub	#'0,r3
+	bmi	4$
+	cmp	#9.,r3
+	bge	5$
+	sub	#'A-'0,r3
+	bmi	4$
+	add	#10.,r3
+	cmp	#15.,r3
+	blt	4$
+5$:	cmp	.base,r3
+	ble	4$
+	add	r3,r1
+	adc	r0
+	br	10$
+
+4$:	clr	(r5)
+	nex
+
+10$:	inc	r2
+	tstb	(r2)
+	bne	1$
+	mov	r1,(r5)
+	mov	r0,-(r5)
+	tst	11$
+	beq	12$
+	neg	(r5)
+	neg	2(r5)
+	sbc	(r5)
+12$:	mov	#-1,-(r5)
+	nex
+11$:	.word	0
+
+
+def	qabort,<abort">,1
+	pcode
+	.word	qcomp
+	.word	if,compile,stdtty,compile,hdquo,quote,word,compst
+	.word	compile,abort,then,exit
+
+def	errrq,<error">,1
+	pcode
+	.word	qcomp,compile,eqz,qabort,exit
+
+
+;###ЮТХаЫХШ
+def	er,<erio?>
+	pcode
+	.word	qbr,1$,exit
+1$:	.word	stdtty,lit,2$,outstr,cr,abort
+2$:	.asciz	'ѕиШСЪР ТТЮФР/ТлТЮФР'
+	.even
+putwor:	pcode
+	.word	dup,c7,putbyt,er,lit,400,del,c7,putbyt,er,exit
+def	hputov,<(putovr)>
+	pcode
+	.word	search,qbr,1$,nfa,at,decr2
+	.word	c7,close,drop,c7,enter,er
+	.word	c7,lit,2400,setbuf,dup,putwor
+	.word	here,over,minus,putwor
+	.word	last,at,putwor,here,putwor
+	.word	here,swap,hdo,2$
+3$:	.word	i,atb,c7,putbyt,er,hloop,3$
+2$:	.word	lit,1000,zero,hdo,4$
+5$:	.word	zero,c7,putbyt,er,hloop,5$
+4$:	.word	c7,close,er,exit
+1$:	.word	stdtty,lit,11$,outstr,nfa,at,outstr,lit,12$,outstr,abort
+11$:	.asciz	'БЫЮТЮ -'
+12$:	.asciz	'- ЭХ ЭРЩФХЭЮ '
+	.even
+
+defc	putovr
+	pcode
+	.word	c7,bl,word,setfl,qbr,fer1$,bl,word
+	.word	hputov,exit
+
+getwor:	pcode
+	.word	c7,getbyt,er,c7,getbyt,er,lit,400,umn,plus,exit
+
+def	hgetov,<(getovr)>
+	pcode
+	.word	c7,close,drop,c7,lookup,er,c7,lit,2400,setbuf
+	.word	getwor,dup,here,eq,qbr,1$,getwor,getwor,getwor
+	.word	rpush,mrot,over,plus,swap
+	.word	hdo,2$
+3$:	.word	c7,getbyt,er,i,tob,hloop,3$
+2$:	.word	c7,close,er,last,to,rpop,h,to,exit
+1$:	.word	stdtty,lit,11$,outstr,abort
+11$:	.asciz	'ЅХЫмЧп ЧРУагЧШвм ЮТХаЫХЩ Т ФРЭЭЮХ ЬХбвЮ'
+	.even
+
+defc	getovr
+	pcode
+	.word	c7,bl,word,setfl,qbr,fer1$
+	.word	hgetov,exit
+
+
+;іаРдШЪР
+;”””””””
+
+.if ne f$bmp
+;ѕЯаХФХЫШвм ЪРавШЭЪг
+;¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤
+defc	defpic
+	pcode
+	.word	reg,swap,zap,zap
+	.word	exit
+
+
+;ТлТХбвШ ЪРавШЭЪг ЭР нЪаРЭ ЯЮвЮзХзЭЮ
+;¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤
+defc	putmsk
+	mov	r4,-(sp)
+	mov	(r5)+,r3	;r3=pic
+	mov	(r5)+,r2	;r2=y
+	ash	#4,r2
+	mov	r2,-(sp)
+	asl	r2
+	asl	r2
+	add	(sp)+,r2	;r2=scr(0,y)
+	mov	(r5),r1
+	bic	#^c7,r1
+	mov	r1,4$		;4$=roll
+	mov	(r5)+,r1
+	mov	r5,-(sp)
+	asr	r1
+	asr	r1
+	asr	r1
+	add	r1,r2		;r2=scr(x,y)
+	bis	#100000,r2
+	mov	(r3)+,2$	;2$=xsize
+	mov	(r3)+,r4
+1$:	mov	r2,@#176640
+	mov	r2,-(sp)
+	mov	(pc)+,r2
+	2$:	.word	0
+3$:	mov	#377,r0
+	clr	r1
+	bisb	(r3)+,r1
+	clr	r5
+	bisb	(r3)+,r5
+	ash	(pc)+,r0
+	4$:	.word	0
+	ash	4$,r1
+	ash	4$,r5
+	bicb	r0,@#176642
+	bicb	r0,@#176643
+	bisb	r1,@#176642
+	bisb	r5,@#176643
+	swab	r0
+	swab	r1
+	swab	r5
+	inc	@#176640
+	bicb	r0,@#176642
+	bicb	r0,@#176643
+	bisb	r1,@#176642
+	bisb	r5,@#176643
+	sob	r2,3$
+	mov	(sp)+,r2
+	add	#120,r2
+	sob	r4,1$
+	mov	(sp)+,r5
+	mov	(sp)+,r4
+	nex
+
+;ІлТХбвШ ЪРавШЭЪг ЭР нЪаРЭ
+;¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤
+defc	putpic		  
+	mov	(r5)+,r3  
+	mov	(r5)+,r1  
+	mul	#120,r1   
+	add	(r5)+,r1  
+	bis	#100000,r1
+	mov	(r3)+,r0
+	mov	(r3)+,r2
+	mov	r1,-(sp)
+1$:	mov	(sp),@#176640
+	mov	r0,r1	
+2$:	mov	(r3)+,@#176642
+	inc	@#176640
+	sob	r1,2$	
+	add	#120,(sp)	
+	bis	#100000,(sp)	
+	sob	r2,1$		
+	tst	(sp)+		
+	nex			
+.endc
+
+defc	rnd
+	clr	r3
+1$:	sec
+	rol	r3
+	cmp	r3,(r5)
+	bcs	1$
+	com	r3
+2$:	mov	#19.,r0
+3$:	mov	rand+2,r1
+	bic	#^c22,r1
+	beq	4$
+	cmp	#22,r1
+	bne	5$
+4$:	tst	(pc)+
+5$:	sec
+6$:	ror	rand
+	ror	rand+2
+	sob	r0,3$
+	mov	rand,r0
+	bic	r3,r0
+	cmp	r0,(r5)
+	bhi	2$
+	mov	r0,(r5)
+	nex
+
+def	hrnd,<(rnd)>
+	mov	#rand,-(r5)
+	nex
+rand:	.word	1,1
+
+.if ne	f$draw
+defc	pset
+	mov	(r5)+,r0
+	mov	(r5)+,r1
+	mov	(r5)+,r2
+	cmp	r1,(pc)+
+wy1:	.word	0
+	blt	j2$
+	cmp	r1,(pc)+
+wy2:	.word	263.
+	bgt	j2$
+	cmp	r2,(pc)+
+wx1:	.word	0
+	blt	j2$
+	cmp	r2,(pc)+
+wx2:	.word	639.
+	bgt	j2$
+	add	(pc)+,r2
+wa:	.word	0
+	add	(pc)+,r1
+wb:	.word	0
+	bic	#^c3,r0
+	mul	#120,r1
+	mov	r2,r3
+	ash	#-3,r2
+	add	r2,r1
+	bis	#100000,r1
+	mov	r1,@#176640
+	asl	r0
+	mov	j1$(r0),r0
+	mov	#401,r1
+	bic	#177770,r3
+	ash	r3,r1
+	bic	r1,@#176642
+	bic	r0,r1
+	bis	r1,@#176642
+j2$:	nex
+j1$:	.word	177777,177400,377,0
+
+defc	point			;x y - c
+	clr	r0
+	mov	(r5)+,r1
+	mov	(r5)+,r2
+	cmp	r1,wy1
+	blt	2$
+	cmp	r1,wy2
+	bgt	2$
+	cmp	r2,wx1
+	blt	2$
+	cmp	r2,wx2
+	bgt	2$
+	add	wa,r2
+	add	wb,r1
+	mul	#120,r1
+	mov	r2,r3
+	ash	#-3,r2
+	add	r2,r1
+	bis	#100000,r1
+	mov	r1,@#176640
+	mov	#1,r1
+	bic	#177770,r3
+	ash	r3,r1
+	bitb	r1,@#176642
+	beq	1$
+	bis	#1,r0
+1$:	bitb	r1,@#176643
+	beq	2$
+	bis	#2,r0
+2$:	mov	r0,-(r5)
+	nex
+
+defc	xyxyab
+	mov	(r5)+,wb
+	mov	(r5)+,wa
+	mov	(r5)+,wy2
+	mov	(r5)+,wx2
+	mov	(r5)+,wy1
+	mov	(r5)+,wx1
+	nex
+
+defc	line
+	mov	#2,r2
+20$:	mov	4(r5),r0	;x,y,x2,y2,c // x,y,sx,y2,c,dx
+	sub	10(r5),r0
+	mov	r0,r1
+	bpl	2$
+	neg	r1
+2$:	mov	r1,-(r5)	;x,y,x2,y2,c,dx // x,y,sx,y2,c,dx,dy
+	clr	r1
+	tst	r0
+	beq	1$
+	bpl	15$
+	dec	r1
+	br	1$
+15$:	inc	r1
+1$:	mov	r1,6(r5)	;x,y,sx,y2,c,dx // x,y,sx,sy,c,dx,dy
+	sob	r2,20$
+	clr	-(r5)		;x,y,sx,sy,c,dx,dy,sw
+	cmp	2(r5),4(r5)
+	blos	5$
+	mov	4(r5),-(sp)
+	mov	2(r5),4(r5)
+	mov	(sp)+,2(r5)
+	inc	(r5)
+5$:	mov	2(r5),-(r5)	;x,y,sx,sy,c,dx,dy,sw,e
+	asl	(r5)
+	sub	6(r5),(r5)
+	mov	6(r5),-(r5)	;x,y,sx,sy,c,dx,dy,sw,e,i
+11$:	mov	22(r5),-(r5)
+	mov	22(r5),-(r5)
+	mov	16(r5),-(r5)
+	pcode
+	.word	pset,next
+	tst	(r5)
+	beq	12$
+6$:	tst	2(r5)		;x,y,sx,sy,c,dx,dy,sw,e,i
+	bmi	7$
+	sub	10(r5),2(r5)
+	sub	10(r5),2(r5)
+	tst	4(r5)
+	beq	8$
+	add	16(r5),22(r5)
+	br	6$
+8$:	add	14(r5),20(r5)
+	br	6$
+7$:	tst	4(r5)
+	beq	9$
+	add	14(r5),20(r5)
+	br	10$
+9$:	add	16(r5),22(r5)
+10$:	add	6(r5),2(r5)
+	add	6(r5),2(r5)
+	dec	(r5)
+	br	11$
+12$:	add	#24,r5
+	nex
+
+defc	circle
+	mov	(r5)+,(pc)+	;color
+1$:	.word	0
+	mov	(r5)+,r0
+	mov	(r5)+,(pc)+	;y-centra
+2$:	.word	0
+	mov	(r5)+,(pc)+	;x-centra
+3$:	.word	0
+	clr	(pc)+		;x-relative
+4$:	.word	0
+	mov	r0,(pc)+	;y-relative
+5$:	.word	0
+	asl	r0
+	mov	#3,6$
+	sub	r0,(pc)+	;d-temporary
+6$:	.word	0
+7$:	cmp	4$,5$
+	bgt	12$
+	mov	5$,r0
+	mul	my1,r0
+	div	my2,r0
+	mov	r0,(pc)+	;real y-relative
+8$:	.word	0
+	mov	4$,r0
+	mul	mx1,r0
+	div	mx2,r0
+	mov	r0,(pc)+	;real x-relative
+9$:	.word	0
+	call	13$		;draw 4
+	mov	5$,r0
+	mul	mx1,r0
+	div	mx2,r0
+	mov	r0,9$
+	mov	4$,r0
+	mul	my1,r0
+	div	my2,r0
+	mov	r0,8$
+	call	13$
+	cmp	4$,5$
+	beq	12$
+	tst	6$
+	bmi	10$
+	mov	4$,r0
+	sub	5$,r0
+	asl	r0
+	asl	r0
+	add	#12,r0
+	add	r0,6$
+	dec	5$
+	br	11$
+10$:	mov	4$,r0
+	asl	r0
+	asl	r0
+	add	#6,r0
+	add	r0,6$
+11$:	inc	4$
+	br	7$
+12$:	nex
+
+13$:	mov	3$,-(r5)
+14$:	add	9$,(r5)
+15$:	mov	(r5),-(r5)
+	mov	2$,-(r5)
+16$:	add	8$,(r5)
+	mov	1$,-(r5)
+	pcode
+	.word	pset,next
+	mov	#100000,r0
+	xor	r0,16$
+	bmi	15$
+	tst	(r5)+
+	xor	r0,14$
+	bmi	13$
+	return
+
+defc	mxmy
+	mov	(r5)+,(pc)+
+my2:	1
+	mov	(r5)+,(pc)+
+my1:	1
+	mov	(r5)+,(pc)+
+mx2:	1
+	mov	(r5)+,(pc)+
+mx1:	2
+	nex
+	.endc
+
+
+.if ne f$bug
+;( ѕвЫРФзШЪ ФЫп ДЮавР )
+def	bugor,<(bug)>
+	mov	.last,r1
+1$:	cmp	r1,r4
+	blo	3$
+2$:	tstb	(r1)+
+	bne	2$
+	inc	r1
+	asr	r1
+	asl	r1
+	mov	(r1),r1
+	bne	1$
+	pcode
+	.word	stdtty,lit,100$,outstr,abort
+3$:	mov	r1,-(sp)
+	mov	.base,-(sp)
+	mov	.iodir,-(sp)
+	mov	.ttycsr,-(sp)
+	mov	.ttydat,-(sp)
+	mov	@#177560,-(sp)
+4$:
+	mov	#8.,.base
+	clr	.iodir
+	mov	#177564,.ttycsr
+	mov	#177566,.ttydat
+	clr	@#177560
+	mov	#102$,r0
+	call	princr
+	mov	12(sp),r0
+	call	print
+	mov	#101$,r0
+	call	princr
+5$:	tstb	@#177560
+	bpl	5$
+	mov	@#177562,r0
+	cmpb	#15,r0
+	beq	6$
+	bic	#177440,r0
+	cmp	#'I,r0
+	beq	7$
+	cmp	#'N,r0
+	beq	8$
+	cmp	#'Q,r0
+	beq	9$
+	cmp	#'R,r0
+	beq	10$
+	cmp	#'S,r0
+	beq	11$
+	cmp	#'V,r0
+	beq	12$
+	br	5$
+6$:	mov	(sp)+,@#177560	;continue
+	mov	(sp)+,.ttydat
+	mov	(sp)+,.ttycsr
+	mov	(sp)+,.iodir
+	mov	(sp)+,.base
+	tst	(sp)+
+50$:	nex
+7$:	mov	#-1,@#177560	;interpret
+	pcode
+	.word	inter,next
+	br	4$
+8$:	mov	#50$,-(r4)	;no debug this word
+	br	6$
+9$:	mov	#134,1$		;quit debug
+	br	6$
+10$:	mov	#-1,@#177560	;rt
+	emt	350
+11$:	pcode			;stack
+	.word	sdot,next
+	br	4$
+12$:	pcode			;vlist
+	.word	vlist,next
+	br	4$
+100$:	.asciz	"ЅХЯаРТШЫмЭлЩ РФаХб"
+101$:	.ascii	" - Inter,N(it),Q(all),Rt11,Stack,Vlist ? "
+102$:	.byte	0
+	.even
+
+	.word	0
+$fdbg:	.word	0
+	.word	pred$$
+pred$$=$fdbg
+	.word	1
+fdbg:	pcode
+	.word	proc,compile,bugor,exit
+
+defc	bugon
+	movb	#':,$fdbg
+	nex
+
+defc	bugoff
+	clr	$fdbg
+	nex
+.endc
+
+
+defc	clt
+	clr	@#177560
+	nex
+
+defc	stt
+	mov	#100,@#177560
+	nex
+
+defc	ttinr
+	clr	-(r5)
+	tstb	@#177560
+	bpl	1$
+	mov	@#177562,(r5)
+1$:	nex
+
+defc	ttyin
+	tstb	@#177560
+	bpl	ttyin
+	mov	@#177562,-(r5)
+	nex
+
+.if ne f$uk
+defc	cls
+	mov	#cls1$,r0
+	prir:	call	print
+	nex
+	cls1$:	.asciz	<33>"%!0"<33>"LI@@7@@1@@1"<33>"%!3"<33>"%!1"<33>"[;r"
+	.even
+
+defc	onxx
+	mov	(r5)+,2$
+	add	#'0,2$
+	mov	#1$,r0
+	br	prir
+1$:	.byte	33,246
+2$:	.word	0
+
+defc	loc
+	pcode
+	.word	esco,lit,'Y,emit,bl,plus,emit,bl,plus,emit,exit
+.endc
+
+endwrd=pred$$
+endvoc=.
+	.end	begn
+                                                                                                                                                                                                                                         

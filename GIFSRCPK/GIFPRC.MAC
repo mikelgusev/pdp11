@@ -1,0 +1,744 @@
+	.macro	$print	a
+	.endm
+
+	.Title	gifprc
+
+	ackey	=	276
+	acreg	=	176246
+
+
+	.asect
+	.=0
+	.word "PC,0,1,0
+	.=10
+	.asciz	/***GIFVIEWER***/
+	.even
+
+
+	.macro	$input	What,c,a
+	call	Get'What
+	mov	r0,c
+	.endm
+
+	.enabl	mcl
+
+	.inclu	"sy:p16mac.mac"
+	.inclu	"sy:wdc.mac"
+	.inclu	"sy:filmac.mac"
+
+	.asect
+	.=1000
+
+Start:	.exit
+	SETPRI	#1
+1$:	tstb	@#177564
+	bpl	1$
+	mov	#about,@#177566
+	UNPREG	actbl
+	PROReg	#actbl
+	KSTRIN	#kstr
+	add	#4,r0
+	mfhlt	r0
+	mov	r0,gifadr
+	jmp	loop
+
+	.files
+
+pln:	.word	7
+;Restart into program
+rStart:
+	.close	52
+	mov	#tur1,r2
+	mov	#5,r3
+1111$:	mov	(r2)+,r0
+	beq	1112$
+	fremem	#1
+1112$:	sob	r3,1111$
+	clr	kbdtak
+	mov	ftkmem,r0
+	beq	1$
+	jmp	(r0)
+1$:	mov	ftkscr,r0
+	beq	2$
+	jmp	(r0)
+2$:
+
+
+loop:	mov	#1000,sp
+	clr	r0
+	clr	r1
+	clr	r2
+	clr	r4
+	mov	#25.,r3
+	WAITINT	#m.tio
+	tst	r0
+	bne	1$
+	tst	r1
+	beq	loop
+1$:	jmp	s.ac
+
+
+work:
+	mov	#ur1,r4
+	mov	#tur1,r2
+	mov	#5,r3
+1111$:	get8k	#1
+	bcc	1112$
+1113$:	clr	(r2)+
+	sob	r3,1113$
+	jmp	rstart
+1112$:	mov	r0,(r4)+
+	mov	r0,(r2)+
+	sob	r3,1111$
+	clr	ftkscr
+	clr	ftkmem
+	mov	#1000,sp
+	clr	r5
+	filcsi	#f$area,r5,#r$prom,#0,#^rgif
+	tst	f$dblk
+	beq	rstart
+	tst	f$dblk+2
+	beq	rstart
+	.lookup	#f$fare,#0,#f$dblk,#-1
+	bcc	1$
+	jmp	rstart
+1$:
+	clr	curblock
+	clr	curptr
+	call	GetBlock
+	call	GetWord
+	cmp	#"GI,r0
+	bne	4$
+	call	GeTWord
+	cmp	#"F8,r0
+	bne	4$
+	call	GETword
+	cmp	#"7a,r0
+	beq	5$
+	cmp	#"9a,r0
+	beq	166$
+4$:	$print	?GIF-W-Это_не_.GIF_формат
+	jmp	rstart
+5$:	$print	Найден_заголовок=GIF87a
+	br	167$
+166$:	$print	Найден_заголовок=GIF89a
+167$:
+
+	$input	word,width,Глобальная_ширина_экрана=
+	$input	word,heigh,Глобальная_высота_экрана=
+
+	call	GetChar
+	bic	#^c7,r0
+	asl	r0
+	mov	tnofc(r0),numofc
+	bne	7364$
+	$print	Показываем_только_2_4_16_256_цветные
+	jmp	rstart
+7364$:	mov	numofc,2333$+2
+	mov	toofc(r0),ofsofc
+	movb	pln+1,regpln+1
+	movb	trgpln(r0),regpln
+	mov	twofs(r0),wofs
+	mov	tinst(r0),inst
+	mov	tmas(r0),mast
+	mov	tpofs(r0),pofs
+
+6$:	$input	char,backg,Фон_экрана=
+
+	call	GetChar
+
+	$print	Загружаем_палитру_...
+	mov	#carea+4,r1
+	add	pofs,r1
+	mov	numofc,r2
+7$:
+	clr	r3
+	clr	r4
+	call	GetChar		;red
+	mov	r0,r3
+	bic	#^c30,r3
+	mov	r0,r4
+	ash	#-3,r4
+	bic	#^c34,r4
+	call	GetChar		;green
+	mov	r0,-(sp)
+	bic	#^c340,r0
+	bis	r0,r4
+	mov	(sp)+,r0
+	bic	#^c34,r0
+	ash	#3,r0
+	bis	r0,r3
+	call	GetChar		;blue
+	mov	r0,-(sp)
+	ash	#-6,r0
+	bic	#^c3,r0
+	bis	r0,r4
+	mov	(sp)+,r0
+	bic	#^c70,r0
+	ash	#-3,r0
+	bis	r0,r3
+2333$:	movb	r3,256.(r1)
+	movb	r4,(r1)+
+	sob	r2,7$
+
+setpal:
+	PLMODx	#carea,regpln
+View:
+19$:	call	GetChar
+	cmpb	#',,r0
+	bne	19$
+	call	GetWord
+	call	GetWord
+
+	$input	word,width,Действительная_ширина_изображения=
+	$input	word,heigh,Действительная_высота_изображения=
+
+
+	mov	width,r0
+	mov	r0,xwidth
+	ash	wofs,r0
+	mov	r0,width
+	tst	fsq
+	beq	4450$
+	asr	width
+4450$:	add	#3,width
+	bic	#3,width
+
+	call	GetChar
+	mov	r0,tmpa
+
+	$print	Создаем_плоскость_и_вид
+
+	tst	fsq
+	beq	4451$
+	asr	heigh
+4451$:	clr	r0
+	mov	#10000,r1
+	div	width,r0	;r0=количество строк в одном rdp
+	mov	r0,r3
+	clr	r0
+	mov	heigh,r1
+	div	r3,r0
+	inc	r0		;r0=количество захвачиваемых rdp
+	inc	r0
+	asr	r0
+	mov	r0,r3
+	mov	r3,allot
+	mov	#place,r2
+1$:	GET8K	#1
+	bcc	2$
+	$print	?GIF-F-Нет_памяти_для_создания_графического_экрана
+5$:	mov	#place,r2
+3$:	cmp	r3,allot
+	beq	4$
+	mov	(r2)+,r0
+	tst	(r2)+
+	FREmem	#1
+	inc	r3
+	br	3$
+6$:	clr	r3
+	br	5$
+4$:	clr	ftkmem
+	jmp	rstart
+2$:	mov	r0,(r2)+
+	mov	r0,(r2)
+	bis	#20,(r2)+
+	mov	ur3,-(sp)
+	mov	r0,ur3
+	mov	#20000*3,r4
+10$:	movb	backg,(r4)+
+	cmp	#<20000*4>,r4
+	bne	10$
+	mov	(sp)+,ur3
+	dec	r3
+	beq	1101$
+	jmp	1$
+1101$:	mov	#6$,ftkmem
+	mov	#carea+2,r1
+	clr	(r1)+		;anum
+	mov	heigh,(r1)+	;lines
+	mov	width,(r1)+	;len of bytes
+	mov	#place,r2
+	mov	heigh,r3
+9$:	mov	#10000,r4
+7$:	cmp	width,r4
+	blos	8$
+	tst	(r2)+
+	br	9$
+8$:	mov	#10000,(r1)
+	sub	r4,(r1)+
+	sub	width,r4
+	mov	(r2),(r1)
+	bic	#^b1100000000000111,(r1)
+	bis	regpln,(r1)+
+	sob	r3,7$
+	ARINST	#carea
+	mov	#frescr,ftkscr
+	mov	carea+2,r4
+	movb	r4,areaid
+	VWCRE	#varea,#0,r4,#0,#0,#0,#600.,#0.,#40.,mast
+	tstb	tmpa
+	bpl	11$
+	$print	?GIF-F-Пока_не_могу_раскрывать_локальную_таблицу_цветов
+	jmp	rstart
+11$:
+	mov	#putcd0,cputcd
+	bit	#100,tmpa
+	beq	172$
+	mov	#putcd1,cputcd
+	tst	fsq
+	beq	172$
+	$print	?GIF-F-Не_могу_сжимать_черезстрочные_изображения
+	jmp	rstart
+172$:	tst	fsq
+	beq	179$
+	mov	#putcd2,cputcd
+179$:	br	show
+	.even
+lzmaxcode	= 4095.
+notcode		= -1
+bitcode:	0
+bitpixel:	0
+maxcode:	0
+maxbit		= 12.
+eofcode:	0
+clearcode:	0
+runcode:	0
+oldcode:	0
+curprefix:	0
+encode:		0
+mode:		0
+fsq:	0			;Flag of Squeeze
+mult:	0
+x:	0
+tmpa:	0
+tnofc:	 2, 0, 0,16., 0, 0, 0,256.
+toofc:	20,20,20,16.,20,20,20,256.
+twofs:	 -3,-2,0,-1,0,0,0,0
+trgpln:	 0,1,0,2,0,0,0,7
+tinst:	in1,in2,0,in4,0,0,0,in8
+tmas:	1002,0,0,1002,0,0,0,402
+tpofs:	14,10,0,0,0,0,0,0
+pofs:	0
+mast:	0
+wofs:	0
+ofsofc:	0
+numofc:	0
+regpln:	0
+
+backg:	0
+code:	0
+curcode: 0
+incode: 0
+finchar:0
+counter:0
+kkk:	0
+b0:	0
+b1:	0
+
+initc:
+	mov	#1,r0
+	ash	bitpixel,r0
+	mov	r0,clearcode
+	inc	r0
+	mov	r0,eofcode
+	inc	r0
+	mov	r0,runcode
+	mov	bitpixel,bitcode
+	inc	bitcode
+	mov	#1,r0
+	ash	bitcode,r0
+	mov	r0,maxcode
+	return
+
+show:
+	clr	mode
+	clr	counter
+	clr	kkk
+	clr	b0
+	clr	b1
+	clr	y
+	call	GetCHar		;******
+	mov	r0,bitpixel	;******
+	mov	#stack,r4
+	clr	r3
+	call	initc
+3$:
+    call getcode
+    cmp r0,eofcode
+    bne 4$
+    $print Конец_данных
+    jmp waiting
+4$:
+	cmp r0,clearcode
+	bne 5$
+            call initc
+	    call getcode
+	    mov r0,r2
+	    mov r0,oldcode
+	    mov r0,finchar
+	    call putcd
+	    br 3$
+5$:
+            mov r0,r2
+	    mov r0,incode
+	    cmp r0,runcode
+	    blo 6$
+                mov oldcode,r2
+                movb finchar,(r4)+
+6$:         cmp r2,clearcode
+	    blo 7$
+	 	    movb suffix(r2),(r4)+
+		    asl r2
+		    mov prefix(r2),r2
+		    br 6$
+7$:         mov r2,FinChar
+            movb finchar,(r4)+
+8$:         movb -(r4),r0
+	    bic #^c377,r0
+	    call putcd
+	    cmp #stack,r4
+	    bne 8$
+	    mov runcode,r1
+	    movb finchar,suffix(r1)
+	    asl r1
+	    mov oldcode,prefix(r1)
+	    mov incode,oldcode
+	    inc runcode
+	    cmp runcode,maxcode
+	    blo 10$
+	        cmp bitcode,#12.
+		bhis 10$
+	        inc bitcode
+		asl maxcode
+10$:	    jmp	3$
+
+waiting:
+	JMP	loop
+
+getcode:
+2$:	cmp	kkk,bitcode
+	bhis	1$
+	call	getxchar
+	mov	r0,r1
+	clr	r0
+	ashc	kkk,r0
+	bis	r1,b1
+	bis	r0,b0
+	add	#8.,kkk
+	br	2$
+1$:	mov	bitcode,r2
+	sub	r2,kkk
+	neg	r2
+	mov	b0,r0
+	mov	b1,r1
+	mov	r1,-(sp)
+	ashc	r2,r0
+	mov	r0,b0
+	mov	r1,b1
+	mov	(sp)+,r0
+	mov	bitcode,r2
+	asl	r2
+	bic	masking(r2),r0
+	return
+
+masking:.word	^b1111111111111111
+	.word	^b1111111111111110
+	.word	^b1111111111111100
+	.word	^b1111111111111000
+	.word	^b1111111111110000
+	.word	^b1111111111100000
+	.word	^b1111111111000000
+	.word	^b1111111110000000
+	.word	^b1111111100000000
+	.word	^b1111111000000000
+	.word	^b1111110000000000
+	.word	^b1111100000000000
+	.word	^b1111000000000000
+	.word	^b1110000000000000
+	.word	^b1100000000000000
+	.word	^b1000000000000000
+	.word	0
+
+
+
+putcd:	137
+cputcd:	0
+inst:	0
+in1:	mov	r3,-(sp)
+	mov	r3,-(sp)
+	bic	#^c7,(sp)
+	ash	#-3,r3
+	mov	r0,-(sp)
+	mov	#1,r0
+	ash	2(sp),r0
+	bicb	r0,buflin(r3)
+	mov	(sp)+,r0
+	ash	(sp)+,r0
+	bisb	r0,buflin(r3)
+	mov	(sp)+,r3
+	return
+in2:	mov	r3,-(sp)
+	mov	r3,-(sp)
+	bic	#^c3,(sp)
+	ash	#-2,r3
+	mov	r0,-(sp)
+	mov	#3,r0
+	ash	2(sp),r0
+	bicb	r0,buflin(r3)
+	mov	(sp)+,r0
+	ash	(sp)+,r0
+	bisb	r0,buflin(r3)
+	mov	(sp)+,r3
+	return
+in4:	bic	#^c17,r0
+	mov	r3,-(sp)
+	asr	r3
+	bcs	2$
+	bicb	#17,buflin(r3)
+	bisb	r0,buflin(r3)
+	br	1$
+2$:	bicb	#^c17,buflin(r3)
+	ash	#4,r0
+	bisb	r0,buflin(r3)
+1$:	mov	(sp)+,r3
+	return
+in8:	movb	r0,buflin(r3)
+	return
+
+
+putcd0:
+	call	@inst
+	inc	r3
+	cmp	xwidth,r3
+	bne	20$
+
+	mov	width,$wi
+	HBMOVE	#hbarea
+	clr	r3
+
+10$:	inc	y
+	cmp	heigh,y
+	bne	20$
+	$print	Заполнили_весь_экран
+	jmp	waiting
+20$:
+	return
+
+putcd2:
+	bit	#1,r3
+	bne	1$
+	tst	fsq
+	beq	1$
+	asr	r3
+	call	@inst
+	asl	r3
+1$:	inc	r3
+	cmp	xwidth,r3
+	bne	20$
+	tst	fsq
+	beq	177$
+	mov	width,$wi
+	HBMOVE	#hbarea
+	inc	y
+	clr	fsq
+	br	178$
+177$:	inc	fsq
+178$:	clr	r3
+10$:	cmp	heigh,y
+	bne	20$
+	$print	Заполнили_весь_экран
+	jmp	waiting
+20$:	return
+
+
+putcd1:
+	call	@inst
+	inc	r3
+	cmp	xwidth,r3
+	bne	20$
+
+	mov	r3,$wi
+	HBMOVE	#hbarea
+	clr	r3
+
+	add	mode,pc
+	br	1$
+	br	2$
+	br	3$
+	br	4$
+1$:	add	#8.,y
+	cmp	y,heigh
+	blo	20$
+	add	#2,mode
+	mov	#4,y
+	br	20$
+2$:	add	#8.,y
+	cmp	y,heigh
+	blo	20$
+	add	#2,mode
+	mov	#2,y
+	br	20$
+3$:	add	#4.,y
+	cmp	y,heigh
+	blo	20$
+	add	#2,mode
+	mov	#1,y
+	br	20$
+4$:	inc	y
+10$:	inc	y
+	cmp	heigh,y
+	bne	20$
+	$print	Заполнили_весь_экран
+	jmp	waiting
+20$:
+	return
+
+
+frescr:
+	clr	ftkscr
+	movb	areaid,r4
+	ARKILL	#carea,r4
+	jmp	rstart
+Getblock:
+	Mov	#Getchar+2,r5
+XGetBlock:
+	MOV	#10,TRYING
+2$:
+	mov	r5,-(sp)
+	mov	52,r5
+	.readw	#area,r5,#buffer,#256.*20,curblock
+	mov	(sp)+,r5
+	bcc	1$
+	tstb	@#52
+	beq	1$
+	DEC	TRYING
+	BNE	2$
+	$print	?GIF-F-Ошибка_чтения
+	jmp	loop
+1$:	return
+
+GetWord::
+	Call	GetChar
+	mov	r0,-(sp)
+	Call	GetChar
+	swab	r0
+	bis	(sp)+,r0
+	return
+
+Getchar::
+	rts	r5
+1$:
+;	mov	#buffer,r0
+;	add	curptr,r0
+;	movb	(r0),r0
+	mov	curptr,r0
+	movb	buffer(r0),r0
+	bic	#^c377,r0
+	call	getchar
+	inc	curptr
+	cmp	#20000,curptr
+	bhi	1$
+	add	#20,curblock
+	call	xgetblock
+	clr	curptr
+	br	1$
+
+s.ac:	mov	acreg,r0
+	cmp	r0,#ackey+400
+	bne	50$
+	tst	kbdtak
+	beq	40$
+	jmp	rstart
+40$:	inc	kbdtak
+	jmp	work
+50$:
+	jmp	loop
+
+
+getxchar:
+	tst	counter
+	bne	1$
+	call	getchar
+	mov	r0,counter
+	bne	1$
+	$print	Конец_данных._Нулевой_счетчик
+	jmp	waiting
+1$:	dec	counter
+	call	getchar
+	return
+
+kstr:	.word	ackey,acreg
+kstr1:	.word	ackey,acreg & 77777
+actbl:	.word	acreg,0,0,2000,s.ac,-1
+
+about:	
+.ascii	/ ЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄІЄЄЄЄЄЄЄЄЄЄЄЄЄЄЁ/<15><12>
+.ascii	/Ѕ(C) Miha Gusew 1994ЅRes Gif-viewerЅ/<15><12>
+.ascii	/ЉЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЈЄЄЄЄЄЄЄЄЄЄЄЄЄЄЇ/<15><12>
+.ascii	/Ѕ           Фикс+Упр+АР2           Ѕ/<15><12>
+.asciz	/ЃЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЂ/
+
+r$prom:	.asciz	/View Gif from file:/
+
+	.even
+defext:		.rad50	"GIFGIFGIFGIF"
+hbarea:
+	.word	HBMOVE
+areaid:	.byte	0,v.pv+v.byte
+y:	.word	0
+	.word	1
+	.word	0
+$wi:	.word	0
+	.word	buflin
+	.word	0
+	.word	0
+
+f$area:	0
+f$err:	0
+f$prm:	0
+f$ret:	0
+	.rad50	/GIF/
+f$dblk:	0,0,0,0
+
+f$fare:	0,0,0,0,0,0,0
+
+wptr=.
+.macro	alloc	n	w=1
+n=wptr
+wptr=wptr+<w*2>
+.endm
+.macro	allocb	n	b=2
+n=wptr
+wptr=wptr+b
+.endm
+
+alloc	area	10.
+alloc	tur1	6
+ALLOC	TRYING
+allocb	linbuf	122.
+alloc	ftkscr
+alloc	ftkmem
+alloc	kbdtak
+alloc	curblock
+alloc	curptr
+alloc	gifadr
+alloc	z
+alloc	xwidth
+alloc	width
+alloc	heigh
+alloc	allot
+alloc	bscca
+alloc	varea	100.
+alloc	place	2000.
+allocb	buffer	20000
+alloc	carea	5000.
+allocb	buflin	3000.
+
+
+alloc	prefix	4098.
+allocb	suffix	4098.
+allocb	stack	4098.
+alloc	devspc
+	.end	Start
+                                                                                                                                                                                                                      

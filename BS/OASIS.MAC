@@ -1,0 +1,1659 @@
+	.save
+	.asect
+	.=0
+	.word	"PC,0,6,0
+	.asciz	"OASIS-TIL"
+	.restore
+
+.macro	df	a,b,c=0
+$$=.
+.asciz	`a`
+.even
+.word	0
+.word	$$$
+$$$=$$
+.word	0,c
+b:
+.endm
+.macro	.print	a=r0
+	mov	a,r0
+	call	print
+.endm	
+
+
+	.ident	/A000/
+	.title	OASIS;thread_interpretative_language_with_long_pointers
+	.enabl	mcl
+	.dsabl	gbl
+	.mcall	.exit
+	.nlist
+	.include	/sy:p16mac.mac/
+	.include	/sy:filmac.mac/
+	.list
+	urw	==	ur2
+	urwbis	==	40000
+	hstak	==	urwbis
+	btak	==	100000
+	bilock	==	40000
+
+utb::	.blkb	10000		;таблица распределения памяти
+xpch::	.word	0		;ст. указатель команд
+xpcl::	.word	0		;мл. указатель команд
+str1::	.blkb	1000
+str2::	.blkb	1000
+
+	.files
+
+;----------------------------------------
+;Настройка для чтения по заданному адресу
+;----------------------------------------
+stand::
+	mov	r1,-(sp)
+	ashc	#-12.,r0
+	bic	#^c7776,r1
+	mov	utb(r1),r0
+	bpl	1$		;address not in available area
+3$:	bic	#140017,r0
+	mov	r0,urw
+	mov	utb+2(r1),r0
+	bpl	1$
+	bic	#140017,r0
+	mov	r0,urw+2
+	mov	(sp)+,r1
+	bic	#160000,r1
+	bis	#urwbis,r1
+	return
+1$:	tst	(sp)+
+	.print	#2$
+	mov	(sp)+,r0
+	halt
+	jmp	start
+2$:	.asciz	"?OASIS-Invalid address"
+	.even
+
+
+;---------------------------------------
+;Настройка для записи по длинному адресу
+;---------------------------------------
+tstand::
+	mov	r1,-(sp)
+	ashc	#-12.,r0
+	bic	#^c7776,r1
+	mov	utb(r1),r0
+	bmi	1$		;address not in available area
+	call	3$
+1$:	bis	#bilock,utb(r1)
+	bic	#140017,r0
+	mov	r0,urw
+	add	#2,r1
+	mov	utb(r1),r0
+	bmi	2$
+	call	3$
+2$:	bic	#140017,r0
+	mov	r0,urw+2
+	mov	(sp)+,r1
+	bic	#160000,r1
+	bis	#urwbis,r1
+	return
+3$:	mov	r2,-(sp)
+	mov	#utb,r2
+4$:	cmp	r2,#utb+10000
+	beq	5$
+	bit	#btak,(r2)+
+	beq	4$
+	bit	#bilock,-2(r2)
+	bne	4$
+	mov	-(r2),utb(r1)
+	mov	(sp)+,r2
+	return
+5$:	mov	(sp)+,r2
+	get8k	#1
+	bcs	6$		;not enough memory
+	bic	#140017,r0
+	bis	#btak,r0
+	mov	r0,utb(r1)
+	return
+6$:	.print	#7$		;not enough memory at all
+	halt
+	jmp	start
+7$:	.asciz	"?OASIS-F-Not enough memory at all"
+	.even
+
+;--------------------
+;Считать входной байт
+;--------------------
+gtb:	tst	.iodir+2
+	bne	gtbfil
+gtbkbr:
+1$:	tstb	@#177560
+	bpl	1$
+	mov	@#177562,r0
+	bic	#177400,r0
+	call	print
+	cmp	#15,r0
+	bne	2$
+	mov	#12,r0
+	call	print
+	mov	#15,r0
+2$:	return
+gtbfil:	mov	r1,-(sp)
+	mov	.fileptr,r0
+	mov	.fileptr+2,r1
+	ashc	#-9.,r0
+	cmp	r1,blk
+	beq	1$
+	mov	r1,blk
+	.readw	#area,.filch+2,#buf,#256.,r1
+	bcc	1$
+	.print	#rder
+	.close	.filch+2
+	clr	.iodir
+	clr	.iodir+2
+	mov	(sp)+,r1
+	br	gtbkbr
+1$:	mov	.fileptr+2,r0
+	bic	#^c777,r0
+	movb	buf(r0),r0
+	bic	#177400,r0
+	mov	(sp)+,r1
+	add	#1,.fileptr+2
+	adc	.fileptr
+	return
+
+rder:	.asciz	"?OASIS-Read error"
+area:	.blkw	10.
+blk:	0
+buf:	.blkw	256.
+
+;----------------------------
+;Распечатать строку на экране
+;----------------------------
+print:
+1$:	tstb	@#177564
+	bpl	1$
+	mov	r0,@#177566
+	return
+
+;------------------------------------------------
+;холодный старт системы, полная инициализация
+;захват необходимого количества памяти и загрузка
+;начального файла
+;------------------------------------------------
+xstart:	clr	pc
+	setpri	#1
+start::
+	clr	@#177560
+	clr	@#177564
+	mov	#1000,sp
+	mov	#ur0,r5			;заполним первые пять указателей
+1$:	mov	(r5)+,r0		;таблицы распределения памяти
+	bic	#140017,r0
+	bis	#140000,r0
+	mov	r0,utb-ur0-2(r5)
+	cmp	#ur7+2,r5
+	bne	1$
+	clr	xpch
+	mov	#cold,xpcl
+
+;----------------------------
+;интерпретация системы команд
+;----------------------------
+isys::
+q2$:	mov	xpcl,r1
+	mov	xpch,r0
+	add	#4,xpcl
+	adc	xpch
+	call	stand
+q77$:	tst	(r1)
+	bne	q1$
+	cmp	#cfence,2(r1)
+	bhi	q3$
+q1$:	mov	xpcl,-(sp)
+	mov	xpch,-(sp)
+	mov	(r1)+,xpch
+	mov	(r1),xpcl
+	br	q2$
+q3$:	mov	2(r1),r1
+	jmp	(r1)
+q44$:	.asciz	"?OASIS-Стек данных не кратен 4"
+	.even
+
+$$=0
+$$$=0
+
+df	^'oasis',oasis
+	jmp	isys
+
+df	^'sysopen',sysopen
+	.lookup	#area,#0,#dblk
+	bcc	1$
+	.print	#cnope
+	jmp	isys
+1$:	mov	@#52,.filch+2
+	clr	.filch
+	mov	#-1,.iodir+2
+	mov	#-1,.iodir
+	mov	#-1,blk
+	.print	#opsw
+	jmp	isys
+
+
+opsw:	.asciz	"Loading OASIS.INI ..."<15><12>
+cnope:	.asciz	"?OASIS-Can't open OASIS.INI"
+dblk:	.rad50	/HD3OASIS INI/
+
+
+df	^'system',exo
+	.print	#1$
+	mov	#-1,@#174152
+1$:	.asciz	"Back to the system."
+	.even
+
+
+df	^'exit',exit
+	mov	(sp)+,xpch
+	mov	(sp)+,xpcl
+	jmp	isys
+
+
+df	^'+',plus
+	add	2(r5),6(r5)
+	adc	4(r5)
+	add	(r5)+,2(r5)
+	tst	(r5)+
+	jmp	isys
+
+
+df	^'-',minus
+	sub	2(r5),6(r5)
+	sbc	4(r5)
+	sub	(r5)+,2(r5)
+	tst	(r5)+
+	jmp	isys
+
+
+df	^'negate',negate
+	com	(r5)
+	com	2(r5)
+	sub	#1,2(r5)
+	sbc	(r5)
+	jmp	isys
+
+
+df	^'?dup',qdup
+	mov	(r5),r0
+	bis	2(r5),r0
+	bne	dup
+	jmp	isys
+
+
+df	^'dup',dup
+	mov	2(r5),-(r5)
+	mov	2(r5),-(r5)
+	jmp	isys
+
+
+df	^'over',over
+	mov	6(r5),-(r5)
+	mov	6(r5),-(r5)
+	jmp	isys
+
+
+df	^'swap',swap
+	mov	(r5),r0
+	mov	2(r5),r1
+	mov	4(r5),(r5)
+	mov	6(r5),2(r5)
+	mov	r0,4(r5)
+	mov	r1,6(r5)
+	jmp	isys
+
+
+df	^'drop',drop
+	add	#4,r5
+	jmp	isys
+
+
+df	^'rot',rot
+	mov	12(r5),r1
+	mov	10(r5),r0
+	mov	6(r5),12(r5)
+	mov	4(r5),10(r5)
+	mov	2(r5),6(r5)
+	mov	(r5),2(r5)
+	mov	r1,2(r5)
+	mov	r0,(r5)
+	jmp	isys
+
+df	^'-rot',mrot
+	mov	12(r5),r1
+	mov	10(r5),r0
+	mov	2(r5),12(r5)
+	mov	0(r5),10(r5)
+	mov	6(r5),2(r5)
+	mov	4(r5),0(r5)
+	mov	r1,6(r5)
+	mov	r0,4(r5)
+	jmp	isys
+
+df	^'press',press
+	mov	(r5)+,2(r5)
+	mov	(r5)+,2(r5)
+	jmp	isys
+
+df	^'pick',pick
+	tst	(r5)+
+	mov	(r5)+,r0
+	asl	r0
+	asl	r0
+	add	r5,r0
+	mov	2(r0),-(r5)
+	mov	2(r0),-(r5)
+	jmp	isys
+
+df	^'w16@',sat
+	mov	(r5)+,r0
+	mov	(r5)+,r1
+	call	stand
+	mov	(r1)+,-(r5)
+	clr	-(r5)
+	jmp	isys
+
+df	^'@',dat
+	mov	(r5)+,r0
+	mov	(r5)+,r1
+	call	stand
+	mov	2(r1),-(r5)
+	mov	(r1),-(r5)
+	jmp	isys
+
+df	^'dup@?dup',datqd
+	mov	(r5),r0
+	mov	2(r5),r1
+	call	stand
+	mov	2(r1),-(r5)
+	mov	(r1),-(r5)
+	jmp	qdup
+
+df	^'c@',cat
+	mov	(r5)+,r0
+	mov	(r5)+,r1
+	call	stand
+	clrb	-(r5)
+	movb	(r1),-(r5)
+	clr	-(r5)
+	jmp	isys
+
+df	^'dupc@?dup',catqd
+	mov	(r5),r0
+	mov	2(r5),r1
+	call	stand
+	clrb	-(r5)
+	movb	(r1),-(r5)
+	clr	-(r5)
+	jmp	qdup
+
+df	^'c!',cto
+	mov	(r5)+,r0
+	mov	(r5)+,r1
+	call	tstand
+	tst	(r5)+
+	tstb	(r5)+
+	movb	(r5)+,(r1)
+	jmp	isys
+
+df	^'w16!',sto
+	mov	(r5)+,r0
+	mov	(r5)+,r1
+	tst	(r5)+
+	call	tstand
+	mov	(r5)+,(r1)
+	jmp	isys
+
+df	^'1!',dto1
+	mov	(r5)+,r0
+	mov	(r5)+,r1
+	call	tstand
+	clr	(r1)+
+	mov	#1,(r1)
+	jmp	isys
+
+df	^'0!',dto0
+	mov	(r5)+,r0
+	mov	(r5)+,r1
+	call	tstand
+	clr	(r1)+
+	clr	(r1)
+	jmp	isys
+
+df	^'!',dto
+	mov	(r5)+,r0
+	mov	(r5)+,r1
+	call	tstand
+	mov	(r5)+,(r1)+
+	mov	(r5)+,(r1)
+	jmp	isys
+
+df	^'or',or
+	bis	(r5)+,2(r5)
+	bis	(r5)+,2(r5)
+	jmp	isys
+
+df	^'and',and
+	com	(r5)
+	bic	(r5)+,2(r5)
+	com	(r5)
+	bic	(r5)+,2(r5)
+	jmp	isys
+
+df	^'xor',xorxor
+	mov	(r5)+,r0
+	xor	r0,2(r5)
+	mov	(r5)+,r0
+	xor	r0,2(r5)
+	jmp	isys
+
+df	^'not',not
+	com	(r5)
+	com	2(r5)
+	jmp	isys
+
+df	^'emit',emit
+	tst	(r5)+
+	mov	(r5)+,r0
+	bic	#177400,r0
+	call	print
+	jmp	isys
+
+df	^'rdrop',rdrop
+	add	#4,sp
+	jmp	isys
+
+df	^'>r',rpush
+	mov	(r5)+,r0
+	mov	(r5)+,-(sp)
+	mov	r0,-(sp)
+	jmp	isys
+
+df	^'r>',rpop
+	mov	(sp)+,r0
+	mov	(sp)+,-(r5)
+	mov	r0,-(r5)
+	jmp	isys
+
+df	^'r@',rcopy
+	mov	2(sp),-(r5)
+	mov	(sp),-(r5)
+	jmp	isys
+
+df	^'rpick',rpick
+	tst	(r5)+
+	mov	(r5)+,r0
+	asl	r0
+	asl	r0
+	add	sp,r0
+	mov	2(r0),-(r5)
+	mov	(r0),-(r5)
+	jmp	isys
+
+df	^'branch',branch
+	mov	xpch,r0
+	mov	xpcl,r1
+	call	stand
+	mov	(r1)+,xpch
+	mov	(r1),xpcl
+	jmp	isys
+
+df	^'?branch',qbr
+	bis	(r5)+,(r5)
+	tst	(r5)+
+	beq	branch
+	add	#4,xpcl
+	adc	xpch
+	jmp	isys
+
+df	^'n?branch',nqbr
+	bis	(r5)+,(r5)
+	tst	(r5)+
+	bne	branch
+	add	#4,xpcl
+	adc	xpch
+	jmp	isys
+
+df	^'0=',qzero
+	bis	(r5)+,(r5)
+	tst	(r5)+
+	bne	izero
+inzero:	mov	#-1,-(r5)
+	mov	#-1,-(r5)
+	jmp	isys
+izero:	clr	-(r5)
+	clr	-(r5)
+	jmp	isys
+
+df	^'0<>',nqzero
+	bis	(r5)+,(r5)
+	tst	(r5)+
+	bne	inzero
+	br	izero
+
+df	^'>',gt
+	mov	(r5)+,r0
+	mov	(r5)+,r1
+	mov	(r5)+,r2
+	mov	(r5)+,r3
+	cmp	r2,r0
+	bgt	inzero
+	blt	izero
+	cmp	r3,r1
+	bgt	inzero
+	br	izero
+
+df	^'<',lt
+	mov	(r5)+,r0
+	mov	(r5)+,r1
+	mov	(r5)+,r2
+	mov	(r5)+,r3
+	cmp	r2,r0
+	blt	inzero
+	bgt	izero
+	cmp	r3,r1
+	blt	inzero
+	br	izero
+
+df	^'u>',ugt
+	mov	(r5)+,r0
+	mov	(r5)+,r1
+	mov	(r5)+,r2
+	mov	(r5)+,r3
+	cmp	r2,r0
+	bhi	inzero
+	blo	izero
+	cmp	r3,r1
+	bhi	inzero
+	br	izero
+
+df	^'u<',ult
+	mov	(r5)+,r0
+	mov	(r5)+,r1
+	mov	(r5)+,r2
+	mov	(r5)+,r3
+	cmp	r2,r0
+	blo	inzero
+	bhi	izero
+	cmp	r3,r1
+	blo	inzero
+	br	izero
+
+df	^'lit',lit
+	mov	xpch,r0
+	mov	xpcl,r1
+	add	#4,xpcl
+	adc	xpch
+	call	stand
+	mov	2(r1),-(r5)
+	mov	(r1),-(r5)
+	jmp	isys
+
+df	^'setr0',setr0
+	mov	#1000,sp
+	jmp	isys
+
+df	^'sets0',sets0
+	mov	#hstak,r5
+	jmp	isys
+
+df	^'sp@',atsp
+	mov	r5,r0
+	mov	r0,-(r5)
+	clr	-(r5)
+	jmp	isys
+
+df	^'1+',incr
+	add	#1,2(r5)
+	adc	(r5)
+	jmp	isys
+
+df	^'2+',incr2
+	add	#2,2(r5)
+	adc	(r5)
+	jmp	isys
+
+df	^'2-',deccr2
+	sub	#2,2(r5)
+	sbc	(r5)
+	jmp	isys
+
+df	^'4+',incr4
+	add	#4,2(r5)
+	adc	(r5)
+	jmp	isys
+
+df	^'4-',decr4
+	sub	#4,2(r5)
+	sbc	(r5)
+	jmp	isys
+
+df	^'1-',decr
+	sub	#1,2(r5)
+	sbc	(r5)
+	jmp	isys
+
+df	^'0',zero
+	clr	-(r5)
+	clr	-(r5)
+	jmp	isys
+
+
+df	^'1',c1
+	mov	#1,-(r5)
+	clr	-(r5)
+	jmp	isys
+
+df	^'-1',cm1
+	mov	#-1,-(r5)
+	mov	#-1,-(r5)
+	jmp	isys
+
+df	^'2',c2
+	mov	#2,-(r5)
+	clr	-(r5)
+	jmp	isys
+
+df	^'-2',cm2
+	mov	#-2,-(r5)
+	mov	#-1,-(r5)
+	jmp	isys
+
+df	^'4',c4
+	mov	#4,-(r5)
+	clr	-(r5)
+	jmp	isys
+
+df	^'(create)',cre
+	mov	.last,13$	;take linkage
+	mov	.last+2,13$+2	;..
+	mov	(r5),r0
+	mov	2(r5),r1
+	call	stand
+	mov	r5,r4
+1$:	movb	(r1)+,-(r4)
+	bne	1$
+	mov	.h,r0
+	mov	.h+2,r1
+	mov	r0,.last	;set new linkage
+	mov	r1,.last+2	;
+	call	tstand
+	mov	r5,r4
+2$:	add	#1,.h+2
+	adc	.h
+	movb	-(r4),(r1)+
+	bne	2$
+	add	#11,.h+2
+	adc	.h
+	bic	#1,.h+2
+	inc	r1
+	bic	#1,r1
+	mov	13$,(r1)+
+	mov	13$+2,(r1)+
+	clr	(r1)+
+	clr	(r1)+
+	jmp	isys
+13$:	,
+
+
+df	^'",',scomp
+	mov	(r5),r0
+	mov	2(r5),r1
+	call	stand
+	mov	r5,r4
+1$:	movb	(r1)+,-(r4)
+	bne	1$
+	mov	.h,r0
+	mov	.h+2,r1
+	call	tstand
+	mov	r5,r4
+2$:	add	#1,.h+2
+	adc	.h
+	movb	-(r4),(r1)+
+	bne	2$
+	add	#1,.h+2
+	adc	.h
+	bic	#1,.h+2
+	jmp	isys
+13$:	,
+
+
+df	^'2*',mul2
+	clc
+	rol	2(r5)
+	rol	(r5)
+	jmp	isys
+
+df	^'2/',div2
+	asr	(r5)
+	ror	2(r5)
+	jmp	isys
+
+df	^'word',word
+	tst	(r5)+
+	mov	(r5)+,r2
+	mov	#str1,r1
+	mov	r1,-(r5)
+	clr	-(r5)
+33$:	call	gtb
+	cmpb	r0,r2
+	beq	33$
+	movb	r0,(r1)+
+	tstb	r2
+	beq	3$
+	cmpb	#40,r2
+	beq	3$
+	cmpb	#9.,r2
+	beq	3$
+	cmpb	#15,r2
+	beq	3$
+	cmpb	#12,r2
+	beq	3$
+1$:	call	gtb
+	cmpb	r0,r2
+	beq	5$
+	movb	r0,(r1)+
+	br	1$
+2$:	call	gtb
+	movb	r0,(r1)+
+3$:	tstb	r0
+	beq	4$
+	cmpb	#40,r0
+	beq	4$
+	cmpb	#9.,r0
+	beq	4$
+	cmpb	#15,r0
+	beq	4$
+	cmpb	#12,r0
+	beq	4$
+	cmpb	#14,r0
+	bne	2$
+4$:	dec	r1
+	cmp	r1,#str1
+	beq	2$
+	br	6$
+5$:	cmp	r1,#str1
+	beq	1$
+6$:	clrb	(r1)+
+	jmp	isys
+7$:	0
+
+
+df	^'stop',stop
+	halt
+	jmp	isys
+
+
+
+df	^'find-nfa',findnfa
+	mov	(r5),r0
+	mov	2(r5),r1
+	tst	r0
+	bne	100$
+	cmp	#hstak,r1
+	bhi	100$
+	mov	r1,r4
+	br	101$
+100$:	call	stand
+	mov	#str2,r4
+	mov	r4,r0
+102$:	movb	(r1)+,(r0)+
+	bne	102$
+101$:	mov	.last,r0
+	mov	.last+2,r1
+1111$:	mov	r0,(r5)
+	mov	r1,2(r5)
+	call	stand
+	mov	r4,r0
+103$:	cmpb	(r0),(r1)+
+	bne	110$
+	tstb	(r0)+
+	bne	103$
+	mov	(r5),.nfa
+	mov	2(r5),.nfa+2
+	jmp	isys
+110$:	dec	r1
+111$:	tstb	(r1)+
+	bne	111$
+	inc	r1
+	bic	#1,r1
+	mov	(r1)+,r0
+	mov	(r1),r1
+	bne	1111$
+	tst	r0
+	bne	1111$
+	clr	(r5)
+	clr	2(r5)
+	mov	#str2,.nfa+2
+	clr	.nfa
+	jmp	exit
+
+
+df	^'str=',strcmp
+	mov	(r5)+,r2
+	mov	(r5)+,r3
+	mov	(r5)+,r0
+	mov	(r5)+,r1
+	tst	r0
+	bne	177$
+	mov	r1,r4
+	cmp	#hstak,r1
+	bhi	277$
+177$:	call	stand
+	mov	#str2,r0
+178$:	movb	(r1)+,(r0)+
+	bne	178$
+	mov	#str2,r4
+277$:	mov	r2,r0
+	mov	r3,r1
+	call	stand
+1$:	cmpb	(r4)+,(r1)
+	bne	3$
+	tstb	(r1)+
+	bne	1$
+	mov	#-1,-(r5)
+	mov	#-1,-(r5)
+	jmp	isys	
+3$:	clr	-(r5)
+	clr	-(r5)
+	jmp	isys
+
+
+df	^'execute',exec
+	mov	(r5)+,1$
+	mov	(r5)+,1$+2
+	clr	r0
+	mov	#1$,r1
+	jmp	q77$
+1$:	,
+
+
+df	^'key',key
+	call	gtb
+	mov	r0,-(r5)
+	clr	-(r5)
+	jmp	isys
+
+
+
+df	^'tozero',tozero
+	mov	(r5),r0
+	mov	2(r5),r1
+	call	stand
+1$:	add	#1,2(r5)
+	adc	(r5)
+	tstb	(r1)+
+	bne	1$
+	add	#1,2(r5)
+	adc	(r5)
+	bic	#1,2(r5)
+	jmp	isys
+
+
+df	^'cmove',cmove		;(12,10)(6,4)(2,0)
+	mov	4(r5),r2
+	mov	6(r5),r3
+	mov	10(r5),r4
+1$:	tst	(r5)
+	bne	2$
+	tst	2(r5)
+	beq	3$	
+2$:	sub	#1,2(r5)
+	sbc	(r5)
+	mov	r4,r0
+	mov	12(r5),r1
+	call	stand
+	movb	(r1),-(sp)
+	mov	r2,r0
+	mov	r3,r1
+	call	tstand
+	movb	(sp)+,(r1)
+	add	#1,r3
+	adc	r2
+	add	#1,12(r5)
+	adc	r4
+	br	1$
+3$:	add	#14,r5
+	jmp	isys
+
+
+df	^'type',type
+	mov	(r5)+,r0
+	mov	(r5)+,r1
+	call	stand
+1$:	movb	(r1)+,r0
+	beq	2$
+	bic	#^c377,r0
+	call	print
+	br	1$
+2$:	jmp	isys
+
+
+df	^'(h.)',hhdot
+	mov	(r5)+,r0
+	mov	(r5)+,r1
+	mov	#8.,r2
+1$:	mov	r1,r3
+	bic	#^c17,r3
+	asl	r3
+	mov	2$(r3),-(r5)
+	clr	-(r5)
+	ashc	#-4.,r0
+	sob	r2,1$
+	jmp	isys
+2$:	.word	'0,'1,'2,'3,'4,'5,'6,'7,'8,'9,'A,'B,'C,'D,'E,'F
+
+
+cfence:
+
+df	^'h.',hdot
+	,bl
+	,emit
+	,hhdot
+	,emit
+	,emit
+	,emit
+	,emit
+	,emit
+	,emit
+	,emit
+	,emit
+	,exit
+
+df	^'find',find
+	,findnfa
+	,tozero
+	,incr4
+	,incr4
+	,dup
+	,cfa
+	,dto
+	,exit
+
+df	^'s,',szap
+	,here
+	,sto
+	,here
+	,incr2
+	,h
+	,dto
+	,exit
+
+df	^',',zap
+	,here
+	,dto
+	,here
+	,incr4
+	,h
+	,dto
+	,exit
+	,exit
+
+df	^'h',h
+	,hreg
+.h::	,endpro
+
+df	^'base0',base0
+	,hcon
+.base0::,8.
+
+df	^'base',base
+	,hreg
+.base::	,
+
+df	^'state',state
+	,hreg
+.state::,
+
+df	^'(region)',hreg
+	,rpop
+	,exit
+
+df	^'(constant)',hcon
+	,rpop
+	,dat
+	,exit
+
+df	^'stdtty',stdtty
+	,exit
+
+df	^'quit',quit
+	,setr0
+	,stdtty
+	,base0
+	,base
+	,dto
+	,zero
+	,iodir
+	,dto
+	,inter
+	,abort
+
+df	^'abort',abort
+	,sets0
+	,quit
+
+df	^'stack_underflow?',stunfl
+	,atsp
+	,lit
+	,hstak
+	,ugt
+	,nqbr
+	,1$
+	,exit
+1$:	,lit
+	,2$
+	,type
+	,abort
+2$:	.asciz	"?OASIS-Stack underflow"
+	.even
+
+
+df	^'bl',bl
+	,hcon
+	,40
+
+df	^'number',number
+	,exit
+
+df	^'msg',msg
+	,lit
+	,1$
+	,type
+	,drop
+	,exit
+1$:	.asciz	"?OASIS-MSG-..."
+	.even
+
+df	^'dpl',dpl
+	,hreg
+	,
+
+
+df	^'interpret',inter
+1$:
+	,stunfl
+	,bl
+	,word
+	,dup
+	,find
+	,qdup
+	,nqbr
+	,6$
+
+	,zero
+	,iodir
+	,dto
+	,type
+	,hdots
+	.asciz	"- text not found"<15><12>
+	.even
+
+	,branch
+	,1$
+
+
+	,number
+	,nqbr
+	,4$
+		,zero
+		,msg
+		,quit
+4$:	,literal
+	,branch
+	,1$
+6$:	,press
+	,dup
+	,c4
+	,minus
+	,dat
+	,c1
+	,and
+	,not
+	,state
+	,dat
+	,c1
+	,and
+	,and
+	,qbr
+	,10$
+		,zap
+		,branch
+		,1$
+10$:	,exec
+	,branch
+	,1$
+
+
+df	^'last',last
+	,hreg
+.last::	,$cold
+
+
+df	^'iodir',iodir
+	,hreg
+.iodir::,
+
+df	^'file.ch',filch
+	,hreg
+.filch::,
+
+df	^'file.ptr',filptr
+	,hreg
+.fileptr::,
+
+
+
+df	^'quote',quote
+	,hcon
+	,34.
+
+
+df	^'cfa',cfa
+	,hreg
+.cfa::	,
+
+
+df	^'nfa',nfa
+	,hreg
+.nfa::	,
+
+
+df	^'region',reg
+	,create
+	,compile
+	,hreg
+	,exit
+
+df	^'create',create
+	,bl
+	,word
+	,dup
+	,find
+	,qbr
+	,1$
+	,dup
+	,type
+	,hdots
+	.asciz	"-?OASIS-Double definition"<15><12>
+	.even
+1$:	,cre
+	,exit
+
+df	^'[',toint,1
+	,zero
+	,state
+	,dto
+	,exit
+
+df	^']',tocomp
+	,c1
+	,state
+	,dto
+	,exit
+
+df	^"'",shtr
+	,bl
+	,word
+	,find
+	,qdup
+	,nqbr
+	,1$
+	,zero
+	,msg
+	,abort
+1$:	,exit
+
+df	^'(',comment,1
+	,key
+	,lit
+	,')
+	,eq
+	,qbr
+	,comment
+	,exit
+
+df	^'.(',dotcom
+2$:	,key
+	,dup
+	,lit
+	,')
+	,eq
+	,nqbr
+	,1$
+	,emit
+	,branch
+	,2$
+1$:	,crlf
+	,drop
+	,exit
+
+
+df	^'cr',crlf
+	,lit
+	,15
+	,emit
+	,lit
+	,12
+	,emit
+	,exit
+
+
+;df	^'variable',var
+;	,reg
+;	,zero
+;	,zap
+;	,exit
+;
+
+df	^'compile',compile
+	,rpop
+	,dup
+	,incr4
+	,rpush
+	,dat
+	,zap
+	,exit
+
+
+df	^'literal',literal
+	,state
+	,dat
+	,qbr
+	,1$
+	,compile
+	,lit
+	,zap
+1$:	,exit
+
+
+df	^'+!',pto
+	,rpush
+	,rcopy
+	,dat
+	,plus
+	,rpop
+	,dto
+	,exit
+
+
+;df	^'-!',mto
+;	,swap
+;	,negate
+;	,swap
+;	,pto
+;	,exit
+
+;df	^'move',move
+;	,mul2
+;	,cmove
+;	,exit
+
+df	^'depth',depth
+	,atsp
+	,lit
+	,hstak
+	,swap
+	,minus
+	,div2
+	,exit
+
+df	^'here',here
+	,h
+	,dat
+	,exit
+
+;df	^'>mark',markw
+;	,here
+;	,zero
+;	,zap
+;	,exit
+
+;df	^'<mark',markn
+;	,here
+;	,exit
+
+;df	^'>resolve',resw
+;	,here
+;	,swap
+;	,dto
+;	,exit
+
+;df	^'<resolve',resn
+;	,zap
+;	,exit
+
+;df	^'if',if,1
+;	,qc
+;	,compile
+;	,qbr
+;	,markw	
+;	,c2
+;	,exit
+
+;df	^'ifnot',ifn,1
+;	,qc
+;	,compile
+;	,nqbr
+;	,markw
+;	,c2
+;	,exit
+
+;df	^'else',else,1
+;	,qc
+;	,c2
+;	,qp
+;	,compile
+;	,branch
+;	,markw
+;	,swap
+;	,resw
+;	,c2
+;	,exit
+
+;df	^'then',then,1
+;	,qc
+;	,c2
+;	,qp
+;	,resw
+;	,exit
+
+df	^'7',c7
+	,lit
+	,7
+	,exit
+
+;df	^'select',sel,1
+;	,qc
+;	,compile
+;	,hsel
+;	,zero
+;	,here
+;	,zero
+;	,zap
+;	,lit
+;	,7
+;	,exit
+
+;df	^'(select)',hsel
+;	,rpop
+;	,dup
+;	,incr4
+;	,rpush
+;	,dto
+;	,exit
+
+;df	^'(case)',hcas
+;	,qc
+;	,lit
+;	,7
+;	,qp
+;	,swap
+;	,incr
+;	,swap
+;	,exit
+
+;df	^'selector',selt,1
+;	,qc
+;	,over
+;	,compile
+;	,lit
+;	,zap
+;	,compile
+;	,dat
+;	,exit
+
+;df	^'case',case,1
+;	,selt
+;	,hcas
+;	,compile
+;	,eq
+;	,rpush
+;	,rpush
+;	,if
+;	,rpop
+;	,rpop
+;	,lit
+;	,77
+;	,exit
+
+df	^'77',c77
+	,lit
+	,77
+	,exit
+
+;df	^'diap',diap,1
+;	,selt
+;	,hcas
+;	,cm2
+;	,allot
+;	,compile
+;	,1$
+;	,rpush
+;	,rpush
+;	,ifn
+;	,rpop
+;	,rpop
+;	,lit
+;	,77
+;	,exit
+;1$:	,dat
+;	,swap
+;	,over
+;	,lt
+;	,mrot
+;	,gt
+;	,or
+;	,exit
+
+;df	^'true',true,1
+;	,hcas
+;	,rpush
+;	,rpush
+;	,if
+;	,rpop
+;	,rpop
+;	,lit
+;	,77
+;	,exit
+
+;df	^'ecase',ecase,1
+;	,qc
+;	,lit
+;	,77
+;	,qp
+;	,rpush
+;	,rpush
+;	,else
+;	,rpop
+;	,rpop
+;	,lit
+;	,7
+;	,exit
+
+;df	^'eselect',esel,1
+;	,qc
+;	,lit
+;	,7
+;	,qp
+;	,drop
+;	,rep
+;	,then
+;	,endrep
+;	,exit
+
+;df	^'begin',begin,1
+;	,qc
+;	,markn
+;	,c1
+;	,exit
+
+;df	^'again',again,1
+;	,qc
+;	,c1
+;	,qp
+;	,compile
+;	,branch
+;	,resn
+;	,exit
+
+;df	^'until',until,1
+;	,qc
+;	,c1
+;	,qp
+;	,compile
+;	,qbr
+;	,resn
+;	,exit
+
+
+;df	^'?comp',qc
+;	,state
+;	,dat
+;	,c1
+;	,and
+;	,nqbr
+;	,1$
+;	,hdots
+;	.asciz	"?OASIS-Need compilation mode"
+;	.even
+;	,abort
+;1$:	,exit
+;
+
+;df	^'?pairs',qp
+;	,eq
+;	,nqbr
+;	,1$
+;	,hdots
+;	.asciz	"?OASIS-Pairs not found"
+;	.even
+;	,abort
+;1$:	,exit
+;
+
+;df	^'lit"',lits
+;	,rpop
+;	,dup
+;	,tozero
+;	,rpush
+;	,exit
+
+
+
+df	^'=',eq
+	,minus
+	,qzero
+	,exit
+
+
+;df	^'0>',zgt
+;	,zero
+;	,gt
+;	,exit
+;
+
+;df	^'0<',zlt
+;	,zero
+;	,lt
+;	,exit
+
+
+;df	^'<>',noneq
+;	,minus
+;	,nqzero
+;	,exit
+;
+
+;df	^'allot',allot
+;	,here
+;	,plus
+;	,h
+;	,dto
+;	,exit
+
+
+df	^':',ow
+	,create
+	,tocomp
+	,exit
+
+
+df	^';',cw,1
+	,compile
+	,exit
+	,toint
+	,exit
+
+
+;df	^'words',words
+;	,last
+;1$:	,dat
+;	,qdup
+;	,qbr
+;	,2$
+;	,dup
+;	,type
+;	,crlf
+;	,tozero
+;	,branch
+;	,1$
+;2$:	,exit
+;;
+
+;df	^'."',dots,1
+;	,compile
+;	,hdots
+;	,quote
+;	,word
+;	,scomp
+;	,exit
+
+df	^'(.")',hdots
+	,rpop
+	,dup
+	,tozero
+	,rpush
+	,type
+	,exit
+
+
+df	^'about',about
+	,hdots
+	.ascii	"  ЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЁ"<15><12>
+	.ascii	" ЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЁ"<15><12>
+	.ascii	"ЅЅ***  OASIS.  A Forth-like language.  ***ЅЅ"<15><12>
+	.ascii	"ЅЄЄЄЄЄЄЄЄЄ with 32-bit addresses ЄЄЄЄЄЄЄЄЄЄЄ"<15><12>
+	.ascii	"ЅЅFor more information send message to theЅЅ"<15><12>
+	.ascii	"ЅЅMikel Gusev 2:5020/284.6@fidonet or callЅЅ"<15><12>
+	.ascii	"ЅЅme. My phone number is (095) 498-4036.  ЅЅ"<15><12>
+	.ascii	"ЃЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЂ"<15><12>
+	.asciz	" ЃЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЂ"<15><12>
+	.even
+	,exit
+
+$cold:
+df	^'cold',cold
+	,setr0
+	,sets0
+	,base0
+	,base
+	,dto
+	,stdtty
+	,about
+	,sysopen
+	,inter
+	,exo
+
+	.even
+
+endpro::
+
+	.end	xstart
+                                                                                                                                                                                                                                                                                                                                                                             

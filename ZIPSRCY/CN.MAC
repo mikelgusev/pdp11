@@ -1,0 +1,454 @@
+	.Mcall	.print
+	.Enabl	MCL
+
+$GA$=1
+$AG$=2
+$KG$=3
+$GK$=4
+$NO$=5
+
+restart:
+	.srese
+START:
+	mov	#1000,sp
+	.settop	#devspc
+	bcc	222$
+	.print	#nomem
+	emt	^o350
+222$:	mov	#" d,$$MOVE
+	mov	#"k:,$$MOVE
+	call	Command
+	tst	method
+	bne	1$
+	.print	#NOMETH
+	br	restart
+1$:
+	tst	npat
+	bne	776$
+	.print	#NOFILS
+776$:	clr	cnpat
+2$:
+	mov	cnpat,r0
+	asl	r0
+	mov	dpat(r0),r0
+	mov	r0,r1
+	.print
+	mov	#Linbuf,r3
+3$:	movb	(r0)+,(r3)+
+	bne	3$
+	movb	#'[,-1(r3)
+	movb	#'-,(r3)+
+	movb	#'1,(r3)+
+	movb	#'],(r3)+
+	movb	#'=,(r3)+
+4$:	movb	(r1)+,(r3)+
+	bne	4$
+	.csige	#devspc,#defext,#linbuf
+	bcc	5$
+	.print	#smhpnd
+	jmp	restart
+5$:
+	.cstat	#area,#3,#addr
+	mov	addr+4,fillen
+	.cstat	#area,#3,#addr
+	cmp	addr+4,fillen
+	bhis	7$
+	.print	#NOPLDK
+	jmp	restart
+7$:	mov	method,r0
+	clr	$block
+	clr	$oblock
+	mov	fillen,$len
+	beq	9$
+8$:	asl	r0
+	call	@tbm(r0)
+9$:	.close	#0
+	.close	#3
+	inc	cnpat
+	cmp	cnpat,npat
+	beq	6$
+	jmp	2$
+6$:	jmp	restart
+
+tbm:	.word	restart,mga,mag,mkg,mgk,mno
+
+
+mno:	mov	#tno,r2
+	br	x111$
+mag:
+	mov	#tag,r2
+	br	x111$
+mga:
+	mov	#tga,r2
+x111$:
+	tst	..lf
+	beq	111$
+	jmp	xl111$
+111$:	tst	..cr
+	beq	222$
+	jmp	xc111$
+222$:	mov	#64.,r5
+	cmp	r5,fillen
+	blo	2$
+	mov	fillen,r5
+2$:	mov	r5,r1
+	swab	r1
+	.readw	#area,#3,#buf1,r1,$block
+	bcc	3$
+	.print	#errea
+	jmp	restart
+3$:	sub	r5,fillen
+	mov	r1,r3
+	asl	r1
+	mov	#buf1,r0
+4$:	movb	(r0),5$+2
+5$:	movb	0(r2),(r0)+
+	sob	r1,4$
+	.writw	#area,#0,#buf1,r3,$block
+	bcc	6$
+	.print	#erwri
+	jmp	restart
+6$:	add	r5,$block
+	tst	fillen
+	beq	7$
+	jmp	111$
+7$:	return
+
+
+
+xl111$:				;r2-conversion table
+	mov	#buf2,r4
+1$:
+	mov	#32.,r5
+	cmp	r5,fillen
+	blos	2$
+	mov	fillen,r5
+2$:	mov	r5,-(sp)
+	swab	r5
+	mov	#buf1,r3
+	.readw	#area,#3,r3,r5,$block
+	bcc	3$
+	.print	#errea
+	jmp	restart
+3$:	sub	(sp),fillen
+	add	(sp)+,$block
+	asl	r5
+4$:	movb	(r3)+,r1
+	movb	r1,5$+2
+5$:	movb	0(r2),(r4)+
+	cmp	#buf2+40000,r4
+	bne	6$
+	call	12$
+6$:	cmpb	#15,r1
+	bne	7$
+	movb	#12,(r4)+
+	cmp	#buf2+40000,r4
+	bne	7$
+	call	12$
+7$:	sob	r5,4$
+	tst	fillen
+	bne	1$
+	sub	#buf2,r4
+	beq	11$
+8$:	bit	#777,r4
+	beq	9$
+	clrb	(r4)+
+9$:	clc
+	ror	r4
+	.writw	#area,#0,#buf2,r4,$oblock
+	bcc	11$
+10$:	.print	#erwri
+	jmp	restart
+11$:	return
+12$:	.writw	#area,#0,#buf2,#20000,$oblock
+	bcs	10$
+	add	#32.,$oblock
+	mov	#buf2,r4
+	return
+
+
+
+
+xc111$:				;r2-conversion table
+	mov	#buf2,r4
+1$:
+	mov	#32.,r5
+	cmp	r5,fillen
+	blos	2$
+	mov	fillen,r5
+2$:	mov	r5,-(sp)
+	swab	r5
+	mov	#buf1,r3
+	.readw	#area,#3,r3,r5,$block
+	bcc	3$
+	.print	#errea
+	jmp	restart
+3$:	sub	(sp),fillen
+	add	(sp)+,$block
+	asl	r5
+4$:	movb	(r3)+,r1
+	movb	r1,5$+2
+5$:	movb	0(r2),(r4)+
+	cmp	#buf2+40000,r4
+	bne	6$
+	call	12$
+6$:	cmpb	#12,r1
+	bne	7$
+	movb	#15,-1(r4)
+	movb	#12,(r4)+
+	cmp	#buf2+40000,r4
+	bne	7$
+	call	12$
+7$:	sob	r5,4$
+	tst	fillen
+	bne	1$
+	sub	#buf2,r4
+	beq	11$
+8$:	bit	#777,r4
+	beq	9$
+	clrb	(r4)+
+9$:	clc
+	ror	r4
+	.writw	#area,#0,#buf2,r4,$oblock
+	bcc	11$
+10$:	.print	#erwri
+	jmp	restart
+11$:	return
+12$:	.writw	#area,#0,#buf2,#20000,$oblock
+	bcs	10$
+	add	#32.,$oblock
+	mov	#buf2,r4
+	return
+
+
+mgk:
+mkg:
+	return
+
+
+
+Command::
+	.GTLIN	#LinBuf,#Prompt
+	tstb	LinBuf
+	bne	1$
+
+	;ІлТХФХЬ ЯЮФбЪРЧЪг Ъ аРСЮвХ
+	;¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤
+	.print	#About
+	jmp	restart
+
+	;їаЮТЮФШЬ РЭРЫШЧ бваЮЪШ
+	;””””””””””””””””””””””
+1$:
+	mov	#LinBuf,r1
+	mov	#TXTDAT,r3
+	mov	#dpat,r4
+	clr	npat
+	clr	EOL
+	clr	method
+	clr	SOK
+	clr	..lf
+	clr	..cr
+
+	;ВХЯХам ТТЮФШЬ ШЬХЭР дРЩЫЮТ, ЯРввХаЭл ...
+	;¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤
+2$:	tst	SOK
+	bne	3$
+	tst	EOL
+	beq	44$
+	return
+44$:	call	GetName
+	mov	npat,r0
+	asl	r0
+	mov	r3,dpat(r0)
+	inc	npat
+
+	;єЮЯШагХЬ ЯРввХаЭ Ш ЮФЭЮТаХЬХЭЭЮ РЭРЫШЧШагХЬ
+	;ХУЮ ЭР ЭРЫШзШХ ЯаЮЯгйХЭЭле ЯЮЫХЩ
+	;¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤
+22$:	movb	(r2)+,(r3)+
+	bne	22$
+	br	2$
+
+	;їЮиЫШ ЪЫозШ, СХаХЬ Ше
+	;¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤
+3$:	movb	(r1)+,r0
+	bne	4$
+	return
+4$:	cmpb	#'/,r0
+	beq	3$
+	bic	#240,r0
+	movb	r0,nk
+	movb	(r1)+,nk+1
+	bicb	#240,nk+1
+	mov	nk,r0
+	cmpb	#'H,nk
+	bne	5$
+	jmp	Helper
+5$:	cmp	#"AG,r0
+	bne	8$
+	mov	#$AG$,method
+	br	3$
+8$:	cmp	#"GA,r0
+	bne	88$
+	mov	#$GA$,method
+	br	3$
+88$:	cmp	#"GK,r0
+	bne	808$
+	mov	#$GK$,method
+	br	3$
+808$:	cmp	#"KG,r0
+	bne	809$
+	mov	#$KG$,method
+	br	3$
+809$:	cmp	#"NO,r0
+	bne	8009$
+	mov	#$NO$,method
+	br	3$
+8009$:	cmp	#"LF,r0
+	bne	8010$
+	inc	..lf
+	br	3$
+8010$:	cmp	#"CR,r0
+	bne	8011$
+	inc	..cr
+	br	3$
+8011$:
+	.print	#IlKey
+	jmp	ReStart
+
+
+;ІЧпвм ШЬп ЮФЭЮУЮ дРЩЫР
+;¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤
+GetName:
+	mov	#TmpBuf,r2
+
+	;єЮЭХж бваЮЪШ?
+3$:	movb	(r1)+,r0
+	beq	1$
+
+	;єЮЭХж РаУгЬХЭвР?
+	cmpb	#',,r0
+	beq	2$
+
+	;ЅРзРЫЮ ЪЫозХЩ?
+	cmpb	#'/,r0
+	bne	4$
+	dec	r1
+	inc	SOK
+	br	2$
+
+	;·РЯЮЬЭШЬ бШЬТЮЫ Т СгдХаХ
+4$:	movb	r0,(r2)+
+	br	3$
+
+	;ІбХ, ТЧпЫШ бваЮЪг ЯЮЫЭЮбвмо
+1$:	inc	EOL
+2$:	clrb	(r2)+
+
+	mov	#TmpBuf,r2
+	return
+
+
+;ІлТХбвШ ЯЮЬЮйм ЭР нЪаРЭ
+;¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤
+Helper:
+	.print	#Help
+	jmp	restart
+
+
+defext:	.rad50	"LSTLSTLSTLST"
+Prompt:	.ascii	<15>"*"<200>
+About:	.Asciz	"?CONVERTOR-I-Miha's File-Convertor (/H - for help)"
+ErrLin:	.Asciz	"?CONVERTOR-E-ѕиШСЪР Т ЪЮЬРЭФЭЮЩ бваЮЪХ"
+IlKey:	.asciz	"?CONVERTOR-µ-ЅХЯаРТШЫмЭлЩ ЪЫоз "
+nometh:	.asciz	"?CONVERTOR-E-ЅгЦХЭ ЪРЪЮЩ-ЭШСгФм ЪЫозШЪ"
+smhpnd:	.asciz	"?CONVERTOR-E-ЅХ ЬЮУг ЮвЪалвм ТеЮФЭЮЩ Ш ТлееЮФЭЮЩ дРЩЫл"
+nofils:	.asciz	"?CONVERTOR-E-ЅХ гЪРЧРЭЮ ЭХ ЮФЭЮУЮ ШЬХЭШ дРЩЫР"
+nopldk:	.asciz	"?CONVERTOR-E-ЅХв ЬХбвР ЭР гбваЮЩбвТХ"
+nomem:	.asciz	"?CONVERTOR-E-ЅХв ЯРЬпвШ Т rt"
+errea:	.asciz	"?convertor-w-ЮиШСЪР звХЭШп"
+erwri:	.asciz	"?convertor-w-ЮиШСЪР ЧРЯШбШ"
+
+
+TAG:
+	$=0
+	.rept	40
+	.byte	$,$+1,$+2,$+3
+	$=$+4
+	.endr
+	.Ascii	"°±Ііґµ¶·ё№є»јЅѕїАБВГДЕЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯ›њќҐ§ѓ„…†—•‘’‹ЊЎ"
+	.Ascii	"ЈЁ¦©¤ЄЌЋ“ђ–™”љЂЃ‚‡€‰ЉЏћџў «¬­®Їабвгдежзийклмнопрстуфхцчшщъыьэюя"
+tga:
+	$=0
+	.rept	40
+	.byte	$,$+1,$+2,$+3
+	$=$+4
+	.endr
+	.Ascii	"ПРСµ¶·ёТУФХЅѕЖЗЦЙ»јИНєЛ№КМО°±ІЧШЪїЩАДіВґБГЕЫЬЭЮЯЂЃ‚ѓ„…†‡€‰Љ‹ЊЌЋЏ"
+	.Ascii	"ђ‘’“”•–—™љ›њќћџ ЎўЈ¤Ґ¦§Ё©Є«¬­®Їабвгдежзийклмнопрстуфхцчшщъыьэюя"
+tno:
+	$=0
+	.rept	100
+	.byte	$,$+1,$+2,$+3
+	$=$+4
+	.endr
+
+
+Help:
+.ascii " ¤[ю]¤1994¤Mikhail¤Gusew¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤Ў"<15><12>
+.ascii "Ґ ¤¤¤¤Ў  ¤ Ў Ў¦  Ґ®Ї ¤Ў ¦Ў Ў ¤Ў  ґЫп СлбваЮУЮ(!!)       ¤¤¤¤ЎҐ"<15><12>
+.ascii "ҐҐ››››Ґ Ґ ҐҐҐҐҐҐ ў®Ї©¦ў Ґ ҐҐ©¦ў  ЪЮЭТХавШаЮТРЭШп       Ґ››››ҐҐ"<15><12>
+.ascii "ҐЈ¤¤¤¤ў Ј¤ЈўЁЈўЈў ®¬ўЈ	Ё ЈўўЈ   дРЩЫЮТ.               Ј¤¤¤¤ўҐ"<15><12>
+.ascii "©¤¤¤¤¤¤¤¤¤¤¤¤¤¦¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¦¤¤¤¤¤¤¤¤¤¤¤¤¤§"<15><12>
+.ascii "Ґ For PC11-16 Ґ     НвЮ ТРЬ ЭХ SHAREWARE !!!   Ґ Pdp11 - Yes Ґ"<15><12>
+.ascii "©¤¤¤¤¤¤¤¤¤¤¤¤¤Ё¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤Ё¤¤¤¤¤¤¤¤¤¤¤¤¤§"<15><12>
+.ascii "Ґ єЮЬ.бваЮЪР: дРЩЫ[,дРЩЫ][...][][]... /kk.../kk              Ґ"<15><12>
+.ascii "©¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤§"<15><12>
+.ascii "Ґ /AG     - ёЧ ALT Т GOST                                    Ґ"<15><12>
+.ascii "Ґ /GA     - ёЧ GOST Т ALT                                    Ґ"<15><12>
+.ascii "Ґ /KG     - ёЧ KOI Т GOST          (-)                       Ґ"<15><12>
+.ascii "Ґ /GK     - ёЧ GOST Т KOI          (-)                       Ґ"<15><12>
+.ascii "Ґ /NO     - БРЬ Т бХСп                                       Ґ"<15><12>
+.ascii "Ґ /CR     - ґЮСРТЫпвм CR ЯХаХФ LF                            Ґ"<15><12>
+.ascii "Ґ /LF     - ґЮСРТЫпвм LF ЯЮбЫХ CR                            Ґ"<15><12>
+.asciz "Ј¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤ў"
+	.even
+
+	.macro	dsect	a
+	$$=a
+	.endm
+
+	.macro	dw	a	b=1
+	a=$$
+	$$=$$+<b*2>
+	.endm
+
+	.ascii	" dk:"	;ґЮСРТЫпХвбп, ХбЫШ ЭРФЮ.
+TmpBuf:	.blkb	120
+
+	dsect	.
+dw	FilLen		;ґЫШЭЭР вХЪ. ТеЮФЭЮУЮ дРЩЫР Т СЫЮЪРе
+dw	..lf
+dw	..cr
+dw	method
+dw	Eol		;БваЮЪР ЯгбвР
+dw	SOK		;ЅРзРЫЮ ЪЫозХЩ
+dw	addr,6
+dw	$len
+dw	$block
+dw	$oblock
+dw	nk
+dw	cnpat
+dw	npat		;єЮЫШзХбвТЮ ЯРввХаЭЮТ
+dw	dpat,40		;јРббШТ бблЫЮЪ ЭР ЯРввХаЭл
+dw	FilNam,0	;їХаТлЩ нЫХЬХЭв, ШЬп ТлеЮФЭЮУЮ дРЩЫР
+dw	TXTDAT,140	;јХбвЮ ФЫп ЯРввХаЭЮТ.
+dw	$$MOVE,2
+dw	linbuf,51	;ІеЮФЭЮЩ СгддХа ЪЫРТШРвгал
+dw	Area	12
+dw	buf1	32.*256.
+dw	buf2	32.*256.
+dw	devspc
+	.end	start
+                                                            

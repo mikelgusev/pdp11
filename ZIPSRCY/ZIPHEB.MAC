@@ -1,0 +1,369 @@
+o$miha	=	0
+;o$max	=	0
+
+	.mcall	.print
+	.Enabl	Mcl
+
+
+;Локальный заголовок файла
+;ЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄ
+Lcl::
+	.ascii	"PK"<3><4>	;Сигнатура
+	.byte	24,0		;Version need to extract 1,2
+	.word	0		;General purpose bit flag
+L$m::	.word	0		;Compression method
+L$LT::	.word	0		;Last mod file time
+L$LD::	.word	0		;Last mod file date
+L$32::	.word	0,0		;CRC 32
+L$CS::	.word	0,0		;Compressed size
+L$UCS::	.word	0,0		;Uncompressed size
+L$LEN::	.word	0		;File name length
+L$EXT::	.word	0		;Extra field length = 11.-Flen
+	.blkb	12.
+ELcl::
+
+LLcl==ELcl-Lcl	;Длинна локального заголовка
+
+;Запись в центральном директории
+;ЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄ
+Ctr::
+	.ascii	"PK"<1><2>
+	.byte	24,0		;version made by
+	.byte	24,0		;version need to extract
+	.word	0		;General purpose bit flag
+C$M::	.word	0		;Compression method
+C$LT::	.word	0		;Last mod file time
+C$LD::	.word	0		;Last mod file date
+C$32::	.word	0,0		;CRC 32
+C$CS::	.word	0,0		;Compressed size
+C$UCS::	.word	0,0		;Uncompressed size
+C$LEN::	.word	0		;File name length
+C$EXT::	.word	0		;Extra field length = 11.-Flen
+	.word	0		;File comment length
+	.word	0		;Disk number start
+	.word	0		;internal file attr
+	.word	0,0		;external file attr
+C$REL::	.word	0,0		;Relative offset local header
+	.blkb	12.
+ECtr::
+
+LCtr==Ectr-Ctr		;Длинна центрального заголовка
+
+;Конец центрального директория
+;ЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄ
+ENDR::
+	.ascii	"PK"<5><6>
+	.word	0		;number this disk
+	.word	0		;num disk with start central hdr
+E$NE::	.word	0		;num entries central dir this disk
+E$TE::	.word	0		;total entries central dir
+E$SCD::	.word	0,0		;size central directory
+E$REL::	.word	0,0		;offset start central directory
+	.word	Com$1-Com$0	;comment length
+
+Com$0:
+.if	df	o$miha
+.ascii	\ооопл о  оплоппо л    лллноппопл плпо н  о нопло  л лллн   опл опл  лппоо\<15><12>
+.ascii	\  омлмо  омло  опм    о  лоп омл  л омн  омномло  л о  л   омлмомлм ппл\<15><12>
+.ascii	\  оммломло ломмо  л   лллноммо л  л о н  о но лопмл лллн   оммломмл ммл\<15><12>
+.ascii	\ТФТФТкФФФФФФФФФФФФФФФФФФФФФФФПТФТФТФТкФФФФФФФФФФФФФФФФФФФФФФФФФПФТФТФТФТ\<15><12>
+.ascii	\СТСТСГ SysOp:  Mikhail Gusew ГСТСТСТСГ ph: 498-4036 (voice)    ГТСТСТСТС\<15><12>
+.ascii	\ТСТСТГ Orient: PDP11 DEC     ГТСТСТСТГ voice call -> mail call ГСТСТСТСТ\<15><12>
+.ascii	\СФСФСРФФФФФФФФФФФФФФФФФФФФФФФйСФСФСФСРФФФФФФФФФФФФФФФФФФФФФФФФФйФСФСФСФС\<15><12>
+.endc
+.if	df	o$max
+.ascii \            ллП  ллП лллллП ллллллП         ллП  ллП лллллП ллП  ллП\<15><12>
+.ascii \            ВВВПВВВГВВкФФВВПВВкФФВВП        ВВВПВВВГВВкФФВВПРВВПВВкй\<15><12>
+.ascii \            БББББББГБББББББГББГ  ББГ        БББББББГБББББББГ РБББкй\<15><12>
+.ascii \            ААкАкААГААкФФААГААГ  ААГ        ААкАкААГААкФФААГ ААкААП\<15><12>
+.ascii \              ГРй  Г  ГФФ  Г      кйФФФФФФФФ  ГРй  Г  ГФФ  Г  кйР  П\<15><12>
+.ascii \            РФй  РФйРФй  РФйРФФФФФйФ     кФФРФйФФРФйРФйкФРФйРФй  РФй\<15><12>
+.ascii \                  кФФФ     кФФФ кФФФ     кФФФ кФФФ\<15><12>
+.ascii \                  кФФФФФФФФФФФ  кФФФФФФФФФФФ   кФФФФФФФФФФ\<15><12>
+.ascii \                  кФФФ     кФФФ кФФФ     кФФФ          кФФФ\<15><12>
+.ascii \                  кФФФ     кФФФ кФФФ     кФФФ          кФФФ\<15><12>
+.ascii \                 ESPECIALLY FOR PC-11/16 PROGRAMMERS & USERS\<15><12>
+.ascii \                  кФФФФФФФФФФФ  кФФФФФФФФФФФ   кФФФФФФФФФФ\<15><12>
+.ascii \  \<15><12>
+.ascii \           кФФФФФФП кФФФФФФП кФП кФП  кФП кФФФФФФП кФФФФФФФП кФФФФФФП\<15><12>
+.ascii \           РФФФФФФй РФФФФФФй РФй РФй  РФй РФФФФФФй РФФФФФФФй РФФФФФФй\<15><12>
+.ascii \           кФФФФФФП кФФФФФФП кФП кФП  кФП кФФФФФФП    кФП    кФФФП\<15><12>
+.ascii \           Г кФФФФй Г кФП кй Г Г РПРПкйкй Г кФФП Г    Г Г    Г кФй\<15><12>
+.ascii \           Г Г      Г Г Г Г  Г Г  РПРйкй  Г Г  Г Г    Г Г    Г РФФФФП\<15><12>
+.ascii \           РФй      РФй РФй  РФй   РФФй   РФй  РФй    РФй    РФФФФФФй\<15><12>
+.endc
+.byte	0
+Com$1:
+EENDR::
+
+LENDr==Eendr-Endr	;Длинна конца директория
+
+; Записать первоначальную информацию о файле
+;ЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄ
+TakHead::
+	;Store Local header offset
+	;ЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄ
+	mov	o.1,lclo1
+	mov	o.2,lclo2
+
+	mov	rMethod,l$m	;SetMethod
+	clr	l$lt		;Last mod file time
+
+	mov	dattm,r2
+	bic	#^c37,r2
+	sub	#8.,r2
+	bic	#^c177,r2
+	ash	#9.,r2			;r2 = Year
+
+	mov	dattm,r1
+	bic	#^c76000,r1
+	clr	r0
+	ashc	#-5.,r0
+	bis	r1,r2			;r2 = Year!Month
+
+	mov	dattm,r1
+	ash	#-5.,r1
+	bic	#^c37,r1
+	bis	r1,r2
+
+	mov	r2,l$ld		;Last mod file date *********
+
+	mov	U1Size,l$UCS	;Uncompressed size
+	mov	u2Size,l$UCS+2	;Uncompressed size
+
+	;Compute file name length
+	;ЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄ
+	mov	#name,r0
+	clr	r1
+	mov	#l$ext+2,r2
+1$:	movb	(r0)+,(r2)+
+	beq	2$
+	inc	r1
+	br	1$
+2$:	mov	r1,l$len
+	sub	#12.,r1
+	neg	r1
+	mov	r1,l$Ext
+
+	mov	#Lcl,r1
+	mov	#LLcl,r2
+3$:	movb	(r1)+,r0
+	call	PutOutput
+	sob	r2,3$
+
+	mov	o.1,eclo1
+	mov	o.2,eclo2
+	return
+
+
+;Дописать инф. о файле
+;ЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄ
+BakHead::
+	;Заполняем буфер локального заголовка
+	;ЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄ
+;	mov	i.buf,r1
+;	mov	#^b0010000011100011,(r1)+
+;	mov	#^b1101111010111011,(r1)+
+;	mov	#4,r5
+;	call	UpdCrc
+
+	mov	crc1,l$32
+	mov	crc2,l$32+2
+
+	com	l$32
+	com	l$32+2
+
+	.print	#jback
+	mov	o.2,r0
+	mov	o.1,r1
+	sub	eclo1,r1
+	sbc	r0
+	sub	eclo2,r0
+	mov	r1,l$cs
+	mov	r0,l$cs+2
+	call	PutLong
+
+	call	PutRatio
+
+
+	mov	lclo1,r1
+	mov	lclo2,r0
+
+	;Смотрим, где находится информация
+	;ЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄ
+	cmp	r0,oo.2
+	bhi	100$
+	blo	101$
+	cmp	r1,oo.1
+	blo	101$
+100$:	jmp	10$
+101$:
+	;Часть информации находится вне памяти ? или вся
+	;ЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄ
+	cmp	elcl2,oo.2
+	blo	30$
+	bhi	200$
+	cmp	elcl1,oo.1
+	blos	30$
+200$:
+	;Часть информации находится в памяти, а часть на диске
+	;ЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄ
+	;Сначала заполняем диск oo-lclo байтов
+	;ЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄ
+	mov	r1,r5
+	bic	#^c777,r5
+	add	mesto,r5
+	ashc	#-9.,r0
+	mov	r1,mblock
+	.readw	#Area,#0,mesto,#b.len/2,r1
+	bcc	41$
+	.print	#ErBack
+	jmp	Restart
+41$:
+	mov	#Lcl,r2
+	mov	oo.1,r1
+	sub	lclo1,r1
+	mov	r1,r3
+43$:	movb	(r2)+,(r5)+
+	sob	r1,43$
+	.writw	#Area,#0,mesto,#b.len/2,mblock
+	bcc	42$
+	.print	#EwBack
+	jmp	ReStart
+
+42$:	;Заполняем память
+	;ЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄ
+	sub	#LLcl,r3
+	neg	r3
+	mov	o.Buf,r1
+44$:	movb	(r2)+,(r1)+
+	sob	r3,44$
+	br	20$
+
+
+	;Вся информация находится вне памяти
+	;ЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄ
+30$:	mov	lclo1,r1
+	mov	lclo2,r0
+	mov	r1,r5
+	bic	#^c<^b111111111>,r5
+	add	mesto,r5
+	ashc	#-9.,r0
+	mov	r1,mblock
+	.readw	#Area,#0,mesto,#b.len/2,r1
+	bcc	31$
+	.print	#ErBack
+	jmp	Restart
+31$:
+	mov	#Lcl,r0
+	mov	#LLcl,r1
+33$:	movb	(r0)+,(r5)+
+	sob	r1,33$
+	.writw	#Area,#0,mesto,#b.len/2,mblock
+	bcc	20$
+	.print	#EwBack
+	jmp	ReStart
+
+
+
+	;Информация находится полностью в памяти
+	;ЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄ
+10$:	sub	oo.1,r1
+	add	o.Buf,r1
+	mov	#Lcl,r0
+	mov	#LLcl,r2
+11$:	movb	(r0)+,(r1)+
+	sob	r2,11$
+	br	20$
+
+
+
+20$:	.ttyout	#15
+	.ttyout	#12
+	return
+
+PutRatio:
+	mov	#40,r0
+	.ttyout
+	.ttyout
+	mov	l$ucs,r5
+	mov	l$ucs+2,r4
+	mov	r5,r3
+	mov	r4,r2
+	sub	l$cs,r3
+	sbc	r2
+	sub	l$cs+2,r2	;<r01>=(ucs-cs)
+	tst	r2
+	bpl	777$
+	.ttyou	#'-
+	sub	#1,r3
+	sbc	r2
+	com	r3
+	com	r2
+777$:	clr	r1
+	call	PutDig
+	call	PutDig
+	mov	#1,r1
+	call	PutDig
+	.ttyout	#'.
+	call	PutDig
+	.ttyout	#40
+	.ttyout	#'%
+	return
+
+PutDig:
+	clr	r0
+3$:	cmp	r4,r2
+	bhi	1$
+	blo	2$
+	cmp	r5,r3
+	bhi	1$
+2$:	inc	r0
+	sub	r5,r3
+	sbc	r2
+	sub	r4,r2
+	br	3$
+1$:	tst	r0
+	bne	4$
+	tst	r1
+	bne	44$
+	mov	#40,r0
+	br	5$
+4$:	mov	r0,r1
+44$:	add	#60,r0
+5$:	.ttyout
+	; Теперь надо разделить r4,r5 на десять
+	;ЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄ
+	mov	r2,-(sp)
+	mov	r3,-(sp)
+	clr	r3
+	clr	r2
+6$:	tst	r4
+	bne	9$
+	cmp	#10.,r5
+	bhi	7$
+9$:	sub	#10.,r5
+	sbc	r4
+	add	#1,r3
+	adc	r2
+	br	6$
+7$:	mov	r2,r4
+	mov	r3,r5
+	bne	8$
+	tst	r4
+	bne	8$
+	inc	r5
+8$:	mov	(sp)+,r3
+	mov	(sp)+,r2
+	return
+
+
+ErBack:	.Asciz	"?ZIP-I-Не могу прочитать архив"
+EwBack:	.Asciz	"?ZIP-I-Не могу записать в архив"
+	.Even
+
+mblock:	0
+mlen:	0
+
+	.end
+       

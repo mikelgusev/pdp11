@@ -1,0 +1,745 @@
+	.psect	meth1,gbl,ovr
+
+initgetbits:
+	clr	bitbuf
+	clr	subbitbuf
+	clr	bitcount
+	mov	#16.,nfil
+	call	fillbuf
+	call	restore
+	return
+
+fillbuf:
+	mov	r1,-(sp)
+	mov	bitbuf,r1
+	ash	nfil,r1
+	mov	r1,bitbuf
+1$:	cmp	nfil,bitcount
+	ble	2$
+	sub	bitcount,nfil
+	mov	subbitbuf,r0
+	ash	nfil,r0
+	bis	r0,bitbuf
+	call	restore
+	call	getsym
+	call	set
+	mov	r0,subbitbuf
+	mov	#8.,bitcount
+	br	1$
+2$:	
+	sub	nfil,bitcount
+	mov	subbitbuf,r1
+	clr	r0
+	mov	bitcount,-(sp)
+	neg	(sp)
+	ashc	(sp)+,r0
+	bis	r1,bitbuf
+	mov	(sp)+,r1
+	return
+
+getbits:
+	mov	r1,-(sp)
+
+	mov	nfil,-(sp)
+	sub	#16.,(sp)
+	mov	bitbuf,r1
+	clr	r0
+	ashc	(sp)+,r0
+
+	mov	r1,-(sp)
+	call	fillbuf
+	mov	(sp)+,nfil
+
+	mov	(sp)+,r1
+	return
+
+
+subbit:	0
+savsp:	0
+bitcount:0
+
+getlen:	0;.=.+2
+getbuf:	0;.=.+2
+bitbuf:	0;.=.+2
+nfil:	0;.=.+2
+blocksi:0;.=.+2
+
+
+of==154540
+
+left	=of
+	of=of+<3766/2>
+right	=of
+	of=of+<3766/2>
+pTtabl	=OF
+	OF=OF+<1000/2>
+ctable	=of
+
+;	left=of;		:	.=.+3766
+;	right=left+3766;	:	.=.+3766
+;	;clen=right+3766;	:	.=.+776
+;	;ptlen=clen+776;	:	.=.+24
+;	ctable=ptlen+24;	:	.=.+20000
+;	;pttabl=ctable+20000;	:	.=.+1000
+
+;	;count=pttabl+1000;	:	.=.+42
+;	;weight=count+42;	:	.=.+42
+;	;start=weight+42;	:	.=.+44
+
+clen:	.blkb	776
+ptlen:	.blkb	24
+count:	.blkb	42
+weight:	.blkb	42
+start:	.blkb	44
+
+
+AA=176640
+DD=176642
+
+
+p:0;	.=.+2
+i:0;	.=.+2
+k:0;	.=.+2
+len:0;	.=.+2
+ch:0;	.=.+2
+jutbits:0;	.=.+2
+avail:0;	.=.+2
+nextcod:0;	.=.+2
+mask:0;		.=.+2
+nchar:0;	.=.+2
+bitlen:0;	.=.+2
+tablebi:0;	.=.+2
+table:0;	.=.+2
+
+maketa:
+
+L2:	mov	#1,i
+	MOV	#COUNT+2,R1
+1$:	clr	(R1)+
+	CMP	#COUNT+42,R1
+	BNE	1$
+
+	clr	R1
+L7:	cmp	nchar,R1
+	ble	L8
+	mov	bitlen,r0
+	add	R1,r0
+	movb	(r0),r0
+	bic	#^c377,r0	;
+	asl	r0
+	inc	count(r0)
+	inc	R1
+	br	L7
+
+L8:	clr	2+start
+	mov	#1,i
+L10:	cmp	#20,i
+	blo	L11
+	mov	i,r0
+	asl	r0
+	mov	i,r1
+	asl	r1
+	mov	count(r1),r1
+	mov	#20,r2
+	sub	i,r2
+	ash	r2,r1
+	mov	i,r2
+	asl	r2
+	add	start(r2),r1
+	mov	r1,2+start(r0)
+	L12:inc	i
+	br	L10
+
+L11:	tst	42+start
+	beq	L13
+	jsr	pc,error
+L13:	mov	#20,r0
+	sub	tablebi,r0
+	mov	r0,jutbits
+	mov	#1,i
+L14:	cmp	tablebi,i
+	blt	L15
+	mov	jutbits,r1
+	neg	r1
+	mov	r1,-(sp)
+	mov	i,r2
+	asl	r2
+	mov	start(r2),r1
+	clr	r0
+	ashc	(sp)+,r0
+	mov	r1,start(r2)
+	mov	i,r0
+	asl	r0
+	mov	#1,r1
+	mov	tablebi,r2
+	sub	i,r2
+	ash	r2,r1
+	mov	r1,weight(r0)
+L16:	inc	i
+	br	L14
+L15:L17:cmp	#20,i
+	blo	L18
+	mov	i,r0
+	asl	r0
+	mov	#1,r1
+	mov	#20,r2
+	sub	i,r2
+	ash	r2,r1
+	mov	r1,weight(r0)
+	inc	i
+	br	L17
+L18:	mov	tablebi,r1
+	asl	r1
+	mov	2+start(r1),r1
+	clr	r0
+	mov	jutbits,r2
+	neg	r2
+	ashc	r2,r0
+	mov	r1,i
+	tst	i
+	beq	L19
+	mov	#1,r0
+	ash	tablebi,r0
+	mov	r0,k
+L20:	cmp	k,i
+	beq	L21
+	mov	i,r0
+;	asl	r0
+	inc	i
+	add	table,r0
+	mov	r0,AA
+	nop
+;	clr	(r0)
+	clr	DD
+	nop
+	br	L20
+L21:L19:mov	nchar,avail
+	mov	#1,r0
+	mov	#17,r1
+	sub	tablebi,r1
+	ash	r1,r0
+	mov	r0,mask
+	clr	ch
+L22:	cmp	nchar,ch
+	ble	lL23
+	mov	bitlen,r0
+	add	ch,r0
+	movb	(r0),r0
+	bic	#^c377,r0
+	mov	r0,len
+	bne	lL24
+	jmp	l24
+ll24:	mov	len,r0
+	asl	r0
+	mov	start(r0),k
+	mov	len,r0
+	asl	r0
+	mov	weight(r0),r0
+	add	k,r0
+	mov	r0,nextcod
+	cmp	tablebi,len
+	blt	L25
+	mov	len,r0
+	asl	r0
+	mov	start(r0),i
+L26:	cmp	nextcod,i
+	blos	L27
+	mov	i,r0
+;	asl	r0
+	add	table,r0
+	mov	r0,AA
+	nop
+;	mov	ch,(r0)
+	mov	ch,DD
+	nop
+L28:	inc	i
+	br	L26
+
+L27:	br	L29
+ll23:	jmp	l23
+L25:	mov	k,r1
+	clr	r0
+	mov	jutbits,r2
+	neg	r2
+	ashc	r2,r0
+;	asl	r1
+	add	table,r1
+	mov	r1,p		;P HAVE A ADDRESS
+	mov	len,r0
+	sub	tablebi,r0
+	mov	r0,i
+L30:	tst	i
+	beq	L31
+;	tst	@p
+	MOV	P,AA
+	nop
+	TST	DD
+	nop
+	bne	L32
+mov	avail,r0
+;asl	r0
+mov	avail,r1
+;asl	r1
+;mov	#0,left(r1)
+;mov	left(r1),r1
+;mov	r1,right(r0)
+ADD	#LEFT,R1
+MOV	R1,AA
+nop
+CLR	DD
+nop
+ADD	#RIGHT,R0
+MOV	R0,AA
+nop
+CLR	DD
+nop
+;mov	avail,@p
+MOV	P,AA
+nop
+MOV	AVAIL,DD
+nop
+inc	avail
+L32:bit	mask,k
+beq	L33
+;mov	@p,r0
+MOV	P,AA
+nop
+MOV	DD,R0
+nop
+;asl	r0
+add	#right,r0
+mov	r0,p
+br	L34
+L33:
+;mov	@p,r0
+MOV	P,AA
+nop
+MOV	DD,R0
+nop
+;asl	r0
+add	#left,r0
+mov	r0,p
+L34:asl	k
+dec	i
+br	L30
+L31:
+;mov	ch,@p
+MOV	P,AA
+nop
+MOV	CH,DD
+nop
+L29:mov	len,r0
+asl	r0
+mov	nextcod,start(r0)
+L24:inc	ch
+jmp	L22
+L23:L3:
+	return
+
+nn:	0;.=.+2
+nbit:	0;.=.+2
+ispeci:	0;.=.+2
+ipx:	0;.=.+2
+npx:	0;.=.+2
+cpx:	0;.=.+2
+mpx:	0;.=.+2
+
+readpt:
+L36:mov	nbit,nfil
+jsr	pc,getbits
+mov	nfil,npx
+tst	npx
+bne	L38
+mov	nbit,nfil
+jsr	pc,getbits
+mov	nfil,cpx
+clr	ipx
+L39:cmp	nn,ipx
+ble	L40
+mov	ipx,r0
+clrb	ptlen(r0)
+L41:inc	ipx
+br	L39
+L40:clr	ipx
+L42:cmp	#400,ipx
+ble	L43
+mov	ipx,r0
+;asl	r0
+;mov	cpx,pttabl(r0)
+ADD	#PTTABL,R0
+MOV	R0,AA
+nop
+MOV	CPX,DD
+nop
+L44:inc	ipx
+br	L42
+L43:br	L45
+L38:clr	ipx
+L46:cmp	npx,ipx
+ble	L47
+mov	bitbuf,r1
+clr	r0
+ashc	#-15,r0
+mov	r1,cpx
+cmp	#7,cpx
+bne	L48
+mov	#10000,mpx
+L49:bit	bitbuf,mpx
+beq	L50
+mov	mpx,r1
+clr	r0
+ashc	#-1,r0
+mov	r1,mpx
+inc	cpx
+br	L49
+L50:L48:cmp	#7,cpx
+ble	L10000
+mov	#3,r0
+br	L10001
+L10000:mov	cpx,r0
+add	#-3,r0
+L10001:mov	r0,nfil
+jsr	pc,fillbuf
+mov	ipx,r0
+movb	cpx,ptlen(r0)
+inc	ipx
+cmp	ispeci,ipx
+bne	L51
+mov	#2,nfil
+jsr	pc,getbits
+mov	nfil,cpx
+L52:dec	cpx
+blt	L53
+mov	ipx,r0
+clrb	ptlen(r0)
+inc	ipx
+br	L52
+L53:L51:br	L46
+L47:L54:cmp	nn,ipx
+ble	L55
+mov	ipx,r0
+clrb	ptlen(r0)
+inc	ipx
+br	L54
+L55:mov	nn,nchar
+mov	#ptlen,bitlen
+mov	#10,tablebi
+mov	#pttabl,table
+jsr	pc,maketa
+L45:L37:
+	return
+
+ipt:	0;.=.+2
+cpt:	0;.=.+2
+npt:	0;.=.+2
+mpt:	0;.=.+2
+
+readc:
+L57:mov	#11,nfil
+jsr	pc,getbits
+mov	nfil,npt
+tst	npt
+bne	L59
+mov	#11,nfil
+jsr	pc,getbits
+mov	nfil,cpt
+clr	ipt
+L60:cmp	#776,ipt
+ble	L61
+mov	ipt,r0
+clrb	clen(r0)
+L62:inc	ipt
+br	L60
+L61:clr	ipt
+L63:cmp	#10000,ipt
+ble	L64
+mov	ipt,r0
+;asl	r0
+;mov	cpt,ctable(r0)
+ADD	#CTABLE,R0
+MOV	R0,AA
+nop
+MOV	CPT,DD
+nop
+L65:inc	ipt
+br	L63
+L64:jmp	L66
+L59:clr	ipt
+L67:cmp	npt,ipt
+bgt	lL68
+jmp	l68
+ll68:
+mov	bitbuf,r1
+clr	r0
+ashc	#-10,r0
+;asl	r1
+;mov	pttabl(r1),cpt
+ADD	#PTTABL,R1
+MOV	R1,AA
+nop
+MOV	DD,CPT
+nop
+cmp	#23,cpt
+bgt	L69
+mov	#200,mpt
+L72:bit	mpt,bitbuf
+beq	L73
+mov	cpt,r0
+;asl	r0
+;mov	right(r0),cpt
+ADD	#RIGHT,R0
+MOV	R0,AA
+nop
+MOV	DD,CPT
+nop
+br	L74
+L73:mov	cpt,r0
+;asl	r0
+;mov	left(r0),cpt
+ADD	#LEFT,R0
+MOV	R0,AA
+nop
+MOV	DD,CPT
+nop
+L74:mov	mpt,r1
+clr	r0
+ashc	#-1,r0
+mov	r1,mpt
+L70:cmp	#23,cpt
+ble	L72
+L71:L69:mov	cpt,r0
+movb	ptlen(r0),r0
+bic	#^c377,r0
+mov	r0,nfil
+jsr	pc,fillbuf
+cmp	#2,cpt
+blt	L75
+tst	cpt
+bne	L76
+mov	#1,cpt
+br	L77
+L76:cmp	#1,cpt
+bne	L78
+mov	#4,nfil
+jsr	pc,getbits
+mov	nfil,r0
+add	#3,r0
+mov	r0,cpt
+br	L79
+L78:mov	#11,nfil
+jsr	pc,getbits
+mov	nfil,r0
+add	#24,r0
+mov	r0,cpt
+L79:L77:L80:dec	cpt
+blt	L81
+mov	ipt,r0
+clrb	clen(r0)
+inc	ipt
+br	L80
+L81:br	L82
+L75:mov	ipt,r0
+mov	cpt,r1
+add	#-2,r1
+movb	r1,r1
+bic	#^c377,r1
+movb	r1,clen(r0)
+inc	ipt
+L82:jmp	L67
+L68:L83:cmp	#776,ipt
+ble	L84
+mov	ipt,r0
+clrb	clen(r0)
+inc	ipt
+br	L83
+L84:mov	#776,nchar
+mov	#clen,bitlen
+mov	#14,tablebi
+mov	#ctable,table
+jsr	pc,maketa
+L66:L58:
+	return
+
+jdec:	0;.=.+2
+mdec:	0;.=.+2
+
+dec:
+L86:tst	blocksi
+bne	L88
+mov	#20,nfil
+jsr	pc,getbits
+mov	nfil,blocksi
+mov	#23,nn
+mov	#5,nbit
+mov	#3,ispeci
+jsr	pc,readpt
+jsr	pc,readc
+mov	#23,nn
+mov	#4,nbit
+mov	#-1,ispeci
+jsr	pc,readpt
+L88:dec	blocksi
+mov	bitbuf,r1
+clr	r0
+ashc	#-4,r0
+;asl	r1
+;mov	ctable(r1),jdec
+ADD	#CTABLE,R1
+MOV	R1,AA
+nop
+MOV	DD,JDEC
+nop
+cmp	#776,jdec
+bhi	L89
+mov	#10,mdec
+L92:bit	mdec,bitbuf
+beq	L93
+mov	jdec,r0
+;asl	r0
+;mov	right(r0),jdec
+ADD	#RIGHT,R0
+MOV	R0,AA
+nop
+MOV	DD,JDEC
+nop
+br	L94
+L93:mov	jdec,r0
+;asl	r0
+;mov	left(r0),jdec
+ADD	#LEFT,R0
+MOV	R0,AA
+nop
+MOV	DD,JDEC
+nop
+L94:mov	mdec,r1
+clr	r0
+ashc	#-1,r0
+mov	r1,mdec
+L90:cmp	#776,jdec
+blos	L92
+L91:L89:mov	jdec,r0
+movb	clen(r0),r0
+bic	#^c377,r0
+mov	r0,nfil
+jsr	pc,fillbuf
+mov	jdec,r0
+br	L87
+L87:
+	return
+
+jdep:	0;.=.+2
+mdep:	0;.=.+2
+
+dep:
+L96:mov	bitbuf,r1
+clr	r0
+ashc	#-10,r0
+;asl	r1
+;mov	pttabl(r1),jdep
+ADD	#PTTABL,R1
+MOV	R1,AA
+nop
+MOV	DD,JDEP
+nop
+cmp	#21,jdep
+bhi	L98
+mov	#200,mdep
+L101:bit	mdep,bitbuf
+beq	L102
+mov	jdep,r0
+;asl	r0
+;mov	right(r0),jdep
+ADD	#RIGHT,R0
+MOV	R0,AA
+nop
+MOV	DD,JDEP
+nop
+br	L103
+L102:mov	jdep,r0
+;asl	r0
+;mov	left(r0),jdep
+ADD	#LEFT,R0
+MOV	R0,AA
+nop
+MOV	DD,JDEP
+nop
+L103:mov	mdep,r1
+clr	r0
+ashc	#-1,r0
+mov	r1,mdep
+L99:cmp	#21,jdep
+blos	L101
+L100:L98:mov	jdep,r0
+movb	ptlen(r0),r0
+bic	#^c377,r0
+mov	r0,nfil
+jsr	pc,fillbuf
+tst	jdep
+beq	L104
+dec	jdep
+mov	jdep,nfil
+jsr	pc,getbits
+mov	#1,r0
+ash	jdep,r0
+add	nfil,r0
+mov	r0,jdep
+L104:mov	jdep,r0
+br	L97
+L97:
+	return
+
+ide:	0;.=.+2
+jde:	0;.=.+2
+cde:	0;.=.+2
+rde:	0;.=.+2
+
+m1::
+de:
+	mov	sp,savsp
+	call	takmem
+	call	initgetbits
+L106:clr	blocksi
+L108:tst	zipeof
+bne	L109
+call	set
+jsr	pc,dec
+call	restore
+mov	r0,cde
+
+cmp	#377,r0
+blt	L110
+movb	cde,r0
+bic	#^c377,r0
+jsr	pc,putsym
+br	L111
+L110:mov	cde,r0
+add	#-375,r0
+mov	r0,jde
+	call	set
+jsr	pc,dep
+	call	restore
+	inc	r0
+	mov	outptr,r1
+	sub	r0,r1
+	mov	jde,r3
+1$:	mov	r1,r2
+	bic	#CBUF,r2
+	add	outbuf,r2
+	movb	(r2),r0
+	call	PutSym
+	inc	r1
+	sob	r3,1$
+L111:br	L108
+error:
+	.mcall	.print
+	.print	#erm1
+L109:L107:
+	call	FreMem
+	mov	savsp,sp
+	return
+
+erm1:	.asciz	"Error in table creation"
+	.even
+
+	.end
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                   

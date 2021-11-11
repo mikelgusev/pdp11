@@ -1,0 +1,536 @@
+	.enabl	mcl
+	.mcall	.print
+
+start:
+	.print	#about
+	mov	#buffer,r1
+	mov	#60000,r2
+	.settop	#high
+	bcc	1$
+	.print	#nomem
+	.exit
+1$:	clrb	(r1)+
+	sob	r2,1$
+
+	;ﬁ—›ﬁ“€’›ÿ’ gost ‰–Ÿ€– ÿ ﬁ‘›ﬁ“‡’‹’››ﬁ’ ·ﬁ◊‘–›ÿ’ DMAIL
+	;§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§
+	.print	#$updml
+	mov	#-20,iblock
+	mov	#20000,icounter
+	.lookup	#area,#0,#dblk		;open "gost"
+	bcc	2$
+	.print	#nofile
+	.exit
+2$:	mov	r0,lengos		;store gost len
+	clr	gblock
+	clr	gcounter
+	.enter	#area,#2,#dblk,#-1
+	bcc	3$
+	.print	#engos
+	.exit
+3$:	clr	dblock
+	clr	dcounter
+	.enter	#area,#1,#dblkd,#-1	;create dmail
+	bcc	4$
+	.print	#endml
+	.exit
+4$:	call	trans
+	tst	gcounter
+	beq	6$
+	inc	gcounter
+	asr	gcounter
+	.writw	#area,#2,#buf2,gcounter,gblock
+	bcc	6$
+5$:	.print	#ewrite
+	.exit
+6$:	.close	#2
+	.close	#0
+	mov	#-20,iblock
+	mov	#20000,icounter
+	.lookup	#area,#0,#dblke		;open "aliases"
+	bcc	7$
+	.print	#noalia
+	.exit
+7$:	call	getstr
+	cmpb	#'*,str
+	beq	8$
+	call	putdml
+	br	7$
+8$:	.close	#0
+	tst	dcounter
+	beq	9$
+	inc	dcounter
+	asr	dcounter
+	.writw	#area,#1,#buf1,dcounter,dblock
+	bcs	5$
+9$:
+	.close	#1
+
+	.lookup	#area,#0,#dblk		;reopen file
+	bcc	10$
+	.print	#nofile
+	.exit
+10$:	mov	r0,lengos
+	;⁄ﬁ›“’‡‚ÿ‡ﬁ“–›ÿ’ ‰–Ÿ€– gost -> alt
+	;§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§
+	.print	#$cnvga
+	.enter	#area,#1,#dblka,#-1
+	bcc	11$
+	.print	#enalt
+	.exit
+11$:	mov	lengos,r5	;r5=rest blocks
+	clr	r3		;current block
+12$:	mov	#60,r4		;r4=current input/output blocks
+	cmp	r4,r5		;
+	blos	13$		;
+	mov	r5,r4		;
+13$:	swab	r4		;r4=current i/o words
+	.readw	#area,#0,#buffer,r4,r3
+	bcc	14$
+	.print	#eread
+	.exit
+14$:	mov	r4,r2
+	asl	r2
+	mov	#buffer,r1
+	mov	#gat,r0
+15$:	movb	(r1),16$+2
+16$:	movb	0(r0),(r1)+
+	sob	r2,15$
+	.writw	#area,#1,#buffer,r4,r3
+	bcc	17$
+	.print	#ewrite
+	.exit
+17$:	swab	r4
+	add	r4,r3
+	sub	r4,r5
+	bne	12$
+	.close	#1
+	.print	#ok
+	.exit
+
+trans:
+	call	getstr
+	movb	str,r0
+	cmpb	#9.,r0
+	beq	1$		;tab -> putstr
+	cmpb	#' ,r0
+	beq	1$		;space -> putstr
+	cmpb	#200,r0
+	blos	1$
+	tstb	r0
+	beq	1$
+	cmpb	#'+,r0
+	bne	2$		;+ -> printscreen area name
+	.print	#str		;putstring
+1$:	call	putgos
+	br	trans
+2$:	cmpb	#'*,r0
+	bne	3$
+	call	putgos
+	return
+3$:	mov	#file,r1	;try to take file name
+	call	getwor
+	mov	#level,r1	;take first next word
+	call	getwor
+	bic	#<240*400>+240,level
+	cmp	#"OF,level
+	beq	6$
+	mov	level,r1
+4$:	tstb	(r1)+
+	bne	4$
+	cmpb	-(r1),-(r1)	;(r1--)--;
+	bicb	#240,(r1)
+	cmpb	#'K,(r1)
+	bne	5$
+	.print	#watisw
+	.print	#str
+	br	trans
+5$:	mov	#level,r1
+	call	getwor		;drop data
+6$:	mov	#level,r1	;take level
+	call	getword
+	mov	#comment,r1	;take comment
+	call	getstore
+
+	mov	#tmpline,r1	;file exist?
+	mov	#"DA,(r1)+
+	mov	#"0:,(r1)+
+	mov	#file,r2
+7$:	movb	(r2)+,(r1)+
+	bne	7$
+
+8$:	mov	sp,r5
+	.csisp	#outspc,#0,#tmpline
+	mov	r5,sp
+	bcc	9$
+	.print	#fignya
+	.print	#file
+	jmp	trans
+9$:	.dstat	#area,#outspc+30.
+	bcc	10$
+	br	11$
+10$:	.lookup	#area,#7,#outspc+30.	;file exist, try len & date
+	bcc	12$
+11$:	inc	tmpline+2
+	cmpb	#'9,tmpline+2
+	bne	8$
+	jmp	offline
+12$:	mov	r0,len
+	
+	mov	#stack,r5
+	;	-- ⁄ﬁ›“’‡‚ÿ‡„’‹ ‘€ÿ››„
+	.word	13700 , len , 105045 ,112745 , 'K ,6200 , 103004 
+	.word	112745 , '5 ,112745 , '. ,10001 , 5000 ,71027 , 12 
+	.word	62701 , 60 ,110145 , 5700 ,1400-11,12700 , length 
+	.word	112520 ,1400-2
+	;	-- ﬂﬁ€„Á–’‹ ·’”‹’›‚ ⁄–‚–€ﬁ”–
+	.word	12745 , $cblk ,	12745 , 7+<5*400>,10500 , 104375
+	.word	13703 , $cblk ,303 , 42703 , 177740 ,62703 , 2 , 6303
+	.word	5037 , $cblk+2 ,12737 , 200 , $cblk+4,12715 , 7+<6*400>
+	.word	10500 , 104375 ,22525 ,10304
+
+	.readw	#area,#7,#dirbuf,#1000,r4
+	bcc	13$
+	.print	#indata
+	.exit
+13$:
+	;	-- ÿÈ’‹ “ —„‰’‡’
+	.word	12703 , dirbuf+12 ,122763 , 10 , 1 , 1425
+	.word	122763 , 4 , 1 , 1014 ,26337 , 2 , outspc+32., 1010
+	.word	26337 , 4 , outspc+34., 1004
+	.word	26337 , 6 , outspc+36., 1405 ,62703 , 16 , 63703
+	.word	dirbuf+6,1000-31
+	;	-- ›–Ë€ÿ, —’‡’‹ date
+	.word	12702 , date ,16301 , 14 ,72127 , -5
+	.word	42701 , ^c37
+	.word	5000 ,71027 , 12 ,62700 , 60 ,62701 , 60 ,110022
+	.word	110122 ,112722 , '. ,16301 , 14 ,72127 , -12
+	.word	42701 , ^c17 ,5000 ,71027 , 12 ,62700 , 60
+	.word	62701 , 60 ,110022 ,110122 ,112722 , '.
+	.word	16301 , 14 ,42701 , ^c37 ,62701 , 72.
+	.word	5000 ,71027 , 12 ,62700 , 60 ,62701 , 60
+	.word	110022 ,110122 ,105022
+	.close	#7
+		;clear string
+		;§§§§§§§§§§§§
+	mov	#str,r0
+	mov	#80.,r1
+14$:	movb	#40,(r0)+
+	sob	r1,14$
+		;insert file name
+		;§§§§§§§§§§§§§§§§
+	mov	#file,r1
+	mov	#str,r0
+15$:	tstb	(r1)
+	beq	16$
+	movb	(r1)+,(r0)+
+	br	15$
+		;insert file length
+		;§§§§§§§§§§§§§§§§§§
+16$:	inc	r0
+	mov	#length,r1
+	cmp	#str+12.,r0
+	blos	17$
+	mov	#str+12.,r0
+17$:	tstb	(r1)
+	beq	18$
+	movb	(r1)+,(r0)+
+	br	17$
+		;insert date
+		;§§§§§§§§§§§
+18$:	inc	r0
+	mov	#date,r1
+	cmp	#str+20.,r0
+	blos	19$
+	mov	#str+20.,r0
+19$:	tstb	(r1)
+	beq	20$
+	movb	(r1)+,(r0)+
+	br	19$
+		;insert level
+		;§§§§§§§§§§§§
+20$:	inc	r0
+	mov	#level,r1
+	cmp	#str+32.,r0
+	blos	21$
+	mov	#str+32.,r0
+21$:	tstb	(r1)
+	beq	22$
+	movb	(r1)+,(r0)+
+	br	21$
+		;insert comment
+		;§§§§§§§§§§§§§§
+22$:	inc	r0
+	mov	#comment,r1
+	mov	#str+38.,r0
+	blos	23$
+	mov	#str+38.,r0
+23$:	tstb	(r1)
+	beq	24$
+	movb	(r1)+,(r0)+
+	br	23$
+		;put this string
+24$:	clrb	(r0)+
+	call	putgos
+		;putting dml
+		;§§§§§§§§§§§
+	mov	#str,r0
+	mov	#"DA,(r0)+
+	mov	tmpline+2,(r0)+
+	mov	#file,r1
+25$:	movb	(r1)+,(r0)+
+	bne	25$
+	movb	#40,-1(r0)
+	movb	#'[,(r0)+
+	mov	#date,r1
+26$:	movb	(r1)+,(r0)+
+	bne	26$
+	movb	#'],-1(r0)
+	movb	#40,(r0)+
+	mov	#level,r1
+27$:	movb	(r1)+,(r0)+
+	bne	27$
+	call	putdml
+	jmp	trans
+offline:
+		;clear string
+		;§§§§§§§§§§§§
+	mov	#str,r0
+	mov	#80.,r1
+1$:	movb	#40,(r0)+
+	sob	r1,1$
+		;insert file name
+		;§§§§§§§§§§§§§§§§
+	mov	#file,r1
+	mov	#str,r0
+2$:	tstb	(r1)
+	beq	3$
+	movb	(r1)+,(r0)+
+	br	2$
+		;insert offline string
+		;§§§§§§§§§§§§§§§§§§§§§
+3$:	inc	r0
+	mov	#ofline,r1
+	cmp	#str+20.,r0
+	blos	4$
+	mov	#str+20.,r0
+4$:	tstb	(r1)
+	beq	5$
+	movb	(r1)+,(r0)+
+	br	4$
+		;insert level
+		;§§§§§§§§§§§§
+5$:	inc	r0
+	mov	#level,r1
+	cmp	#str+32.,r0
+	blos	6$
+	mov	#str+32.,r0
+6$:	tstb	(r1)
+	beq	7$
+	movb	(r1)+,(r0)+
+	br	6$
+		;insert comment
+		;§§§§§§§§§§§§§§
+7$:	inc	r0
+	mov	#comment,r1
+	mov	#str+38.,r0
+	blos	8$
+	mov	#str+38.,r0
+8$:	tstb	(r1)
+	beq	9$
+	movb	(r1)+,(r0)+
+	br	8$
+		;put this string
+9$:	clrb	(r0)+
+	call	putgos
+	jmp	trans
+
+;·Áÿ‚–‚Ï ·‚‡ﬁ⁄„ “ —„‰’‡ %1 ÿ „·‚–›ﬁ“ÿ‚Ï „⁄–◊–‚’€Ï ›– ›–Á–€ﬁ
+;§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§
+getstr:
+	mov	#str,r1
+	mov	r1,strp
+1$:	call	getbyte
+	cmpb	#15,r0
+	beq	2$
+	movb	r0,(r1)+
+	br	1$
+2$:	clrb	(r1)+
+	call	getbyte	;drop line feed
+	return
+
+
+;·Áÿ‚–‚Ï —–Ÿ‚
+;§§§§§§§§§§§§
+getbyte:
+	cmp	#20000,icounter
+	bne	2$
+	add	#20,iblock
+	.readw	#area,#0,#buffer,#10000,iblock
+	bcc	1$
+	tstb	@#52
+	beq	1$
+	.print	#indata
+	.exit
+1$:	clr	icounter
+2$:	mov	icounter,r0
+	movb	buffer(r0),r0
+	bic	#^c377,r0
+	inc	icounter
+	return
+
+;ø’‡’ﬂÿ·–‚Ï, ›–Áÿ›–Ô · „⁄–◊–‚’€Ô ÿ ‘ﬁ ⁄ﬁ›Ê– ·‚‡ﬁ⁄ÿ “ %1
+;§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§
+getstore:
+	mov	strp,r0
+1$:	movb	(r0)+,(r1)+
+	bne	1$
+	dec	r0
+	mov	r0,strp
+	return
+
+;¡Áÿ‚–‚Ï ﬁ‘›ﬁ ·€ﬁ“ﬁ, ›’‡–◊‘’€’››ﬁ’ ﬂ‡ﬁ—’€–‹ÿ ÿ ‚–—„€ÔÊÿÔ‹ÿ %1
+;§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§
+getwor:
+	mov	strp,r0
+1$:	tstb	(r0)
+	beq	2$
+	cmpb	#9.,(r0)
+	beq	3$
+	cmpb	#40,(r0)
+	beq	3$
+	movb	(r0)+,(r1)+
+	br	1$
+3$:	cmpb	#9.,(r0)
+	beq	4$
+	cmpb	#40,(r0)
+	bne	2$
+4$:	inc	r0
+	br	3$
+2$:	clrb	(r1)+
+	mov	r0,strp
+	return
+
+;≤Î“’·‚ÿ ·‚‡ﬁ⁄„ “ files.gos
+;§§§§§§§§§§§§§§§§§§§§§§§§§§
+putgos:
+;	.print	#str
+	mov	#str,r1
+	call	1$
+	mov	#crlf,r1
+1$:	tstb	(r1)
+	beq	2$
+	mov	gcounter,r0
+	movb	(r1)+,buf2(r0)
+	inc	gcounter
+	cmp	#20000,gcounter
+	bne	1$
+	clr	gcounter
+	.writw	#area,#2,#buf2,#10000,gblock
+	bcc	3$
+	.print	#indata
+	.exit
+3$:	add	#20,gblock
+	mov	#buf2,r1
+	mov	#20000,r2
+4$:	clrb	(r1)+
+	sob	r2,4$
+	br	1$
+2$:	return
+
+;≤Î“’·‚ÿ ·‚‡ﬁ⁄„ “ files.dml
+;§§§§§§§§§§§§§§§§§§§§§§§§§§
+putdml:
+	mov	#str,r1
+	call	1$
+	mov	#crlf,r1
+1$:	tstb	(r1)
+	beq	2$
+	mov	dcounter,r0
+	movb	(r1)+,buf1(r0)
+	inc	dcounter
+	cmp	#20000,dcounter
+	bne	1$
+	clr	dcounter
+	.writw	#area,#1,#buf1,#10000,dblock
+	bcc	3$
+	.print	#indata
+	.exit
+3$:	mov	#buf1,r1
+	mov	#20000,r2
+4$:	clrb	(r1)+
+	sob	r2,4$
+	add	#20,dblock
+	br	1$
+2$:	return
+dblk:	.rad50	/DMLFILES GOS/
+dblka:	.rad50	/DMLFILES BBS/
+dblkd:	.rad50	/DMLFILES DML/
+dblke:	.rad50	/DMLALIAS DML/
+about:	.ascii	/†[˛]§Miha§Gusew§1994§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§°/<15><12>
+	.ascii	/• æ—›ﬁ“€’›ÿ’ DML:FILES.GOS, ·ﬁ◊‘–›ÿ’ DML:FILES.BBS ÿ DML:FILES.DML •/<15><12>
+	.ascii	/• ƒ–Ÿ€Î ÿ◊ ‰–Ÿ€ €ÿ·‚– ‘ﬁ€÷›Î ›–Âﬁ‘ÿ‚·Ô ›– DAT:                     •/<15><12>
+	.asciz	/£§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§¢/
+nofile:	.asciz	/? dml:files.gos - ›’ ›–Ÿ‘’›/
+enalt:	.asciz	/? ›’ ‹ﬁ”„ ·ﬁ◊‘–‚Ï dml:files.bbs/
+endml:	.asciz	/? ›’ ‹ﬁ”„ ·ﬁ◊‘–‚Ï dml:files.dml/
+engos:	.asciz	/? ›’ ‹ﬁ”„ ·ﬁ◊‘–‚Ï dml:files.gos/
+noalia:	.asciz	/? ›’‚ ‰–Ÿ€– ﬁﬂ‡’‘’€’›ÿÔ –€ÿ–·ﬁ“ dml:alias.dml/
+ewrite:	.asciz	/? ›’ ‹ﬁ”„ ◊–ﬂÿ·–‚Ï/
+eread:	.asciz	/? ›’ ‹ﬁ”„ ﬂ‡ﬁÁÿ‚–‚Ï/
+nomem:	.asciz	/? ›’‚ ﬂ–‹Ô‚ÿ “ RT/
+watisw:	.asciz	/? ›’ ‹ﬁ”„ ﬂﬁ›Ô‚Ï ·€’‘„ÓÈ„Ó ·‚‡ﬁ⁄„:/
+fignya:	.asciz	/? ›’ﬂ‡–“ÿ€Ï›ﬁ’ ÿ‹Ô ‰–Ÿ€–:/
+indata:	.asciz	/? ﬁËÿ—⁄– ﬂ‡ÿ “Îÿ·⁄ÿ“–›ÿÿ ‘–‚Î ‰–Ÿ€– (““ﬁ‘-“Î“ﬁ‘?)/
+crlf:	.asciz	<15><12>
+ofline:	.asciz	/offline/
+ok:	.asciz	/* OK/
+$updml:	.asciz	/* æ—›ﬁ“€’›ÿ’ FILES.GOS & ·ﬁ◊‘–›ÿ’ FILES.DML/
+$cnvga:	.asciz	/* ¬‡–›·€ÿ‚’‡–ÊÿÔ FILES.GOS(”ﬁ·‚) -> FILES.BBS(alt)/
+	.even
+gat:
+	$=0
+	.rept	20
+	.byte	$,$+1,$+2,$+3,$+4,$+5,$+6,$+7
+	$=$+10
+	.endr
+	.Ascii	"œ–—µ∂∑∏“”‘’Ωæ∆«÷…ªº»Õ∫Àπ ÃŒ∞±≤◊ÿ⁄øŸ¿ƒ≥¬¥¡√≈€‹›ﬁﬂÄÅÇÉÑÖÜáàâäãåçéè"
+	.Ascii	"êëíìîïñóòôöõúùûü†°¢£§•¶ß®©™´¨≠ÆØ‡·‚„‰ÂÊÁËÈÍÎÏÌÓÔÒÚÛÙıˆ˜¯˘˙˚¸˝˛ˇ"
+
+.macro	dsect	a	;´
+$$=a			;´
+.endm			;´
+.macro	dw	a,b=1	;´
+.iif nb a,	a=$$	;´
+$$=$$+<b*2>		;´
+.endm			;´
+
+dsect	.
+dw area,10.
+dw lengos			;‘€ÿ››– GOST ‰–Ÿ€–
+dw len				;‘€ÿ››– „◊›–“–’‹ﬁ”ﬁ ‰–Ÿ€–
+dw strp				;pointer to the string
+dw tmpline,20.			;temporary file name for csispec
+dw comment,40.			;comments to file
+dw level,40.			;acces level = string
+dw str,80.			;input string (more memory)
+dw file,40.			;file name(big for non error)
+dw length,40.			;length of file = string
+dw date,40.			;date of file = string
+dw iblock	;for
+dw icounter	;	byte
+dw dblock	;		za
+dw dcounter	;			byte
+dw gblock	;				reading
+dw gcounter	;§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§¢
+dw $$$,30		;
+dw stack		;‘€Ô ·‚’⁄–
+dw $$$,40		;
+dw $cblk,14			;for savestatus
+dw outspc,39.
+dw dirbuf,1000			;buffer for directory reading
+dw buffer,<400*20>		;—„‰’‡ ›– ^o 60 —€ﬁ⁄ﬁ“
+dw buf1,<400*20>
+dw buf2,<400*20>
+dw high
+	.end	start

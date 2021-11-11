@@ -1,0 +1,903 @@
+;Extract contents of the *.zip files
+	.Title	ze
+
+	.psect	main,gbl
+
+	lrecsize=	^d26	;of byte
+	crecsize=	^d42	;of byte
+	ecrecsize=	^d18	;of byte
+
+	ABUF	==	20000*4
+	CBUF	==	^c<ABUF-1>
+	NBLK	==	16.*4
+
+	.MCall	.Csige,.ReadW,.Looku,.Print,.Purge,.Wait
+	.MCall	.Cstat,.Csisp,.Fetch,.Dstat,.Enter,.Writw,.ttyin
+	.MCall	.Close,.SCCA,.exit,.settop,.srese,.sfdat,.ttyou
+
+
+;Restart into program
+
+rStart::
+	.SRESE
+	.SCCA	#area,#0	;std
+	bic	#10000,@#44	;std
+Start::
+	call	central
+	bcs	rStart
+View::
+	clr	BSCCA
+	.SCCA	#area,#BSCCA
+
+;Special input from keyboard
+
+	bis	#10000,@#44	;ttspc
+
+;Starting Presets
+
+	clr	TotU1
+	clr	TotU2
+	clr	TotC1
+	clr	TotC2
+	clr	members
+	.print	#Header
+
+;Main Cycle in Central Directory
+1$:	call	GetChar
+200$:	cmpb	#120,r0
+	bne	1$
+	call	GetChar
+	cmpb	#113,r0
+	bne	200$
+	call	GetChar
+	cmpb	#001,r0
+	bne	4$
+	call	GetChar
+	cmpb	#002,r0
+	beq	5$
+	br	200$
+2$:
+	.print	#CSMsg
+	jmp	rStart
+3$:
+	.print	#CSMsg1
+	jmp	rStart
+4$:
+	cmpb	#005,r0
+	bne	200$
+	call	GetChar
+	cmpb	#006,r0
+	bne	3$
+	jmp	19$
+5$:
+
+	call	zline
+
+	mov	Un2CompSize,-(sp)
+	mov	Un1CompSize,-(sp)
+
+	tst	..l
+	beq	16$
+	tst	fnop
+	bne	16$
+	.ttyout	#15
+	.ttyout	#12
+	br	17$
+
+16$:	call	Qextract
+	bcs	18$
+
+
+	call	Extract
+
+17$:	add	(sp),TotU1
+	adc	TotU2
+	add	2(sp),TotU2
+
+	inc	Members
+
+18$:	cmp	(sp)+,(sp)+
+	jmp	1$
+
+19$:
+	.print	#Total
+
+	mov	TotU1,r1
+	mov	TotU2,r0
+	call	PutLong
+
+	.ttyout	#40
+
+	clr	r0
+	mov	Members,r1
+	call	PutLong
+
+	.ttyout	#15
+	.ttyout	#12
+
+	jmp	rStart
+
+TakMem::
+	mov	#FreMem,Ftkmem
+	mov	ura,sura
+	mov	urb,surb
+	mov	#5$,r3
+1$:	mov	(r3)+,r4
+	bne	2$
+	return
+2$:	call	3$
+	call	3$
+	br	1$
+3$:	mov	#1,@#174200	;get8k - 1block
+	nop
+	bcc	4$
+	.print	#NoMemo
+	.exit
+4$:	mov	r0,(r4)+
+	return
+5$:	.word	dprefix
+	.word	dsuffix
+	.word	dstack
+	.word	0
+
+FreMem::
+
+	mov	sura,ura
+	mov	surb,urb
+
+	mov	#4$,r3
+1$:	mov	(r3)+,r4
+	bne	2$
+	clr	FtkMem
+	return
+2$:	call	3$
+	call	3$
+	br	1$
+3$:	mov	(r4)+,r0
+	mov	#1,@#174202	;fre8k - 1block
+	nop
+	return
+4$:	.word	dprefix
+	.word	dsuffix
+	.word	dstack
+	.word	0
+
+
+
+PutLong::
+	mov	r3,-(sp)
+	mov	r2,-(sp)
+	mov	r4,-(sp)
+	mov	#EndTab,r2
+	mov	#40,r4	;flag of left zero shoving
+1$:
+	clr	r3
+2$:
+	cmp	2(r2),r0
+	bhi	4$
+	blo	3$
+	cmp	(r2),r1
+	bhi	4$
+3$:	sub	(r2),r1
+	sbc	r0
+	sub	2(r2),r0
+	inc	r3
+	br	2$
+4$:
+	mov	r0,-(sp)
+	mov	r3,r0
+	beq	5$
+	mov	#'0,r4
+5$:	add	r4,r0
+	.ttyout
+	mov	(sp)+,r0
+	cmp	-(r2),-(r2)
+	cmp	#TabDiv,r2
+	blos	1$
+	cmp	#40,r4
+	bne	6$
+	.print	#bazero
+6$:	mov	#40,r0
+	.ttyout
+	mov	(sp)+,r4
+	mov	(sp)+,r2
+	mov	(sp)+,r3
+ret:	return
+
+TabDiv:
+	.word	1,0
+	.word	12,0
+	.word	144,0
+	.word	1750,0
+	.word	23420,0
+	.word	^b1000011010100000,1
+	.WORD	^b0100001001000000,17
+EndTab:	.word	^b1001011010000000,^b10011000
+
+PutCRC::
+	clr	r0
+	mov	Crc2,r1
+	call	1$
+	mov	Crc1,r1
+1$:	ashc	#4,r0
+	call	2$
+	ashc	#4,r0
+	call	2$
+	ashc	#4,r0
+	call	2$
+	ashc	#4,r0
+2$:	add	#'0,r0
+	cmp	#'9,r0
+	bhis	3$
+	add	#'@-'9,R0
+3$:	.ttyout
+	clr	r0
+	return
+
+PutBuf:
+	mov	r0,-(sp)
+	mov	r1,-(sp)
+	call	updcrc
+	.writw	#area,#0,OutBuf,#256.*NBLK,Outblock
+	bcc	1$
+	jmp	rStart
+1$:
+	call	cback
+
+	.print	#BlckN
+	mov	OutBlock,r1
+	add	#NBLK,r1
+	clr	r0
+	call	PutLong
+	.ttyout	#15
+	
+
+	mov	(sp)+,r1
+	mov	(sp)+,r0
+	return
+Getblock::
+	Mov	#Getchar+2,r5
+XGetBlock:
+	.readw	#area,#3,#buffer,#256.,curblock
+	bcc	1$
+	.print	#ErrRead
+	jmp	rStart
+1$:	return
+
+GetWord::
+	Call	GetChar
+	mov	r0,-(sp)
+	Call	GetChar
+	swab	r0
+	bis	(sp)+,r0
+	return
+
+Getchar::
+	rts	r5
+1$:	tst	BSCCA
+	bmi	BREAK
+	mov	#buffer,r0
+	add	curptr,r0
+	movb	(r0),r0
+	bic	#^c377,r0
+	call	getchar
+	inc	curptr
+	cmp	#1000,curptr
+	bhi	1$
+	inc	curblock
+	call	xgetblock
+	clr	curptr
+	br	1$
+
+BREAK:	tst	Ftkmem
+	beq	1$
+	call	@Ftkmem
+1$:	.print	#tBreak
+	jmp	rStart
+
+PutChar:
+	cmp	#ABUF,outptr
+	bne	2$
+	call	PutBuf
+	clr	outptr
+	add	#NBLK,outblock
+2$:	mov	r0,-(sp)
+	mov	outptr,r0
+	add	outbuf,r0
+	movb	(sp)+,(r0)
+	inc	outptr
+	tst	BSCCA
+	bmi	BREAK
+	return
+
+Extract:
+
+
+;Forming RT11SJ file system name
+
+	;Drop directory names
+	mov	#Linbuf,r3
+111$:	tstb	(r3)+
+	bne	111$
+222$:	dec	r3
+	cmp	#Linbuf,r3
+	beq	333$
+	cmpb	(r3),#'/
+	bne	222$
+	inc	r3
+
+	;Take first 6 symbols
+333$:	mov	#6,r4
+;	mov	#LinBuf,r3	;***upper
+	mov	#FilAsc,r2
+1$:	movb	(r3)+,r0
+	bne	3$
+201$:	movb	#'.,(r2)+
+	br	6$
+3$:	cmpb	#'.,r0
+	bne	2$
+27$:	movb	r0,(r2)+
+	br	26$
+2$:	call	DoAscii
+	tst	r0
+	beq	1$		;Invalid Symbol
+	movb	r0,(r2)+
+	sob	r4,1$
+
+	;Wait for last symbol in name
+4$:	movb	(r3)+,r0
+	beq	201$
+	cmpb	#'.,r0
+	beq	27$
+	call	DoAscii
+	tst	r0
+	beq	4$
+	movb	r0,-1(r2)
+	br	4$
+
+	;Take Extension
+26$:	mov	#3,r4
+226$:	movb	(r3)+,r0
+	beq	6$
+	call	DoAscii
+	tst	r0
+	beq	126$
+	movb	r0,(r2)+
+126$:	sob	r4,226$
+
+6$:	movb	#'=,(r2)+
+	clrb	(r2)+
+
+;open output file
+	mov	sp,r1
+	.csisp	#outspc,#Defno,#FilAsc
+	mov	r1,sp
+
+;add output device
+	mov	outdev,outspc
+
+;Overwrite or not?
+	tst	..o
+	bne	9$
+	.lookup	#area,#0,#outspc
+	bcs	9$
+	.close	#0
+	.print	#fexist
+	.print	#FilAsc-1
+	return
+
+;Entering
+	;Compute len of creating file in blocks
+9$:	mov	Un1CompSize,r1
+	mov	Un2CompSize,r0
+	ashc	#-9.,r0
+	bit	#^b111111111,Un1CompSize
+	beq	99$
+	inc	r1
+99$:	.enter	#area,#0,#outspc,r1
+	bcc	10$
+	.print	#CntCre
+	.print	#filAsc
+	cmpb	#1,@#52
+	bne	984$
+	.print	#NotPlace
+	clr	r0
+	call	PutLong
+	.ttyout	#15
+	.ttyout	#12
+984$:	return
+10$:	clr	outblock
+	clr	outptr
+
+;Store directory position
+
+	call	GetChar
+	mov	curblock,StBlock
+	mov	curptr,StPtr
+
+;Compute offset
+
+	mov	roff1,r1
+	mov	r1,r0
+	bic	#^c777,r0
+	mov	r0,curptr
+	mov	roff2,r0
+	ashc	#-9.,r0
+	mov	r1,curblock
+	call	getblock
+
+;Check integrity
+
+	call	GetChar
+	cmpb	#'P,r0
+	bne	11$
+	call	GetChar
+	cmpb	#'K,r0
+	bne	11$
+	call	GetChar
+	cmpb	#003,r0
+	bne	11$
+	call	GetChar
+	cmpb	#004,r0
+	beq	12$
+11$:	.print	#ErLocal
+	.print	#LinBuf
+	return
+
+;Drop local header
+
+12$:	mov	#26,r1
+13$:	call	GetChar
+	sob	r1,13$
+	call	GetWord
+	mov	r0,r1
+	call	GetWord
+	add	r0,r1
+	beq	15$
+14$:	call	GetChar
+	sob	r1,14$
+15$:
+
+
+;preset crc32
+
+	clr	ZipEof
+	mov	#-1,crc1val
+	mov	#-1,crc2val
+
+;preset bitinput
+
+	mov	#Abitinput,Cbitinput
+
+;Asking for bufSize
+	mov	outbuf,r1
+	add	#ABUF,r1
+	mov	r1,r0
+	.settop
+	cmp	r1,@#50
+	blos	16$
+	.print	#exclm
+16$:
+;Clearing Output buffer (for unimplode...)
+
+	mov	OutBuf,r0
+	mov	#ABUF,r1
+17$:	clrb	(r0)+
+	sob	r1,17$
+
+;choose method
+
+	mov	compr,r0
+	asl	r0
+	call	@EMethod(r0)
+
+;closing file
+	tst	outptr
+	beq	20$
+	call	updcrc
+18$:	bit	#777,outptr
+	beq	19$
+	clr	r0
+	call	PutChar
+	br	18$
+19$:	mov	outptr,r1
+	clc
+	ror	r1
+	beq	20$
+	.writw	#area,#0,OutBuf,r1,Outblock
+	bcc	20$
+	.print	#ErrWrite
+	jmp	rStart
+20$:	.close	#0
+
+;Forming file date
+	mov	Mo,r0
+	ash	#5,r0
+	bis	Dy,r0
+	ash	#5,r0
+	mov	yr,r1
+	sub	#72.,r1
+	bic	#^c37,r1
+	bis	r1,r0
+	mov	r0,rtdate
+;Set file date
+	.sfdat	#area,#0,#outspc,rtdate
+
+	.print	#eofils
+;testing crc
+
+	mov	outbuf,r1
+	mov	crc1,(r1)+
+	mov	crc2,(r1)
+	mov	#4,outptr
+	call	UpdCrc
+
+	cmp	crc1val,#^b0010000011100011
+	bne	21$
+	cmp	crc2val,#^b1101111010111011
+	beq	22$
+21$:	.print	#badcrc
+	mov	crc1val,crc1
+	mov	crc2val,crc2
+	call	PutCrc
+	.ttyout	#15
+	.ttyout	#12
+22$:
+	mov	StBlock,CurBlock
+	mov	StPtr,CurPtr
+	call	GetBlock
+	return
+
+;ТлТХбвШ бШЬТЮЫ Ш ХбЫШ ЮЭ ЯЮбЫХФЭШЩ, вЮ гбвРЭЮТШвм СШв C
+PutSym::
+	tst	Un1compsize
+	bne	1$
+	tst	Un2compsize
+	bne	1$
+	inc	zipEof
+	sec
+	return
+1$:
+	Call	PutChar
+	sub	#1,Un1Compsize
+	sbc	Un2Compsize
+	clc
+	return
+
+ReadBit::
+	mov	r0,-(sp)
+	clr	r0
+	mov	#1,-(sp)
+1$:	call	BitInput
+	bcc	2$
+	bis	(sp),r0
+	clc
+2$:	rol	(sp)
+	dec	2(sp)
+	bne	1$
+	cmp	(sp)+,(sp)+
+	return
+
+
+BitInput:
+	mov	Cbitinput,-(sp)
+	call	@(sp)+
+	mov	(sp)+,Cbitinput
+	return
+
+Cbitinput:	0
+Vbitinput:	0
+
+Abitinput:
+	mov	r0,-(sp)
+	call	GetSym
+	mov	r0,Vbitinput
+	mov	(sp)+,r0
+
+	ror	Vbitinput
+	call	@(sp)+
+	ror	Vbitinput
+	call	@(sp)+
+	ror	Vbitinput
+	call	@(sp)+
+	ror	Vbitinput
+	call	@(sp)+
+	ror	Vbitinput
+	call	@(sp)+
+	ror	Vbitinput
+	call	@(sp)+
+	ror	Vbitinput
+	call	@(sp)+
+	ror	Vbitinput
+	call	@(sp)+
+	br	Abitinput
+
+;бзШвРвм бШЬТЮЫ Ш ХбЫШ ЮЭ ЯЮбЫХФЭШЩ, вЮ гбвРЭЮТШвм СШв C
+GetSym::
+	tst	Comp1Size
+	bne	1$
+	tst	Comp2Size
+	bne	1$
+	inc	zipEof
+	sec
+	return
+1$:
+	Call	GetChar
+	sub	#1,Comp1Size
+	sbc	Comp2Size
+	clc
+	return
+
+DoAscii:
+	bic	#^c177,r0
+	cmp	#'0,r0
+	bhi	1$
+	cmp	#'9,r0
+	bhis	2$
+	cmp	#'A,r0
+	bhi	1$
+	cmp	#'Z,r0
+	bhis	2$
+	cmp	#'a,r0
+	bhi	1$
+	cmp	#'z,r0
+	bhis	2$
+1$:	clr	r0
+2$:	return
+
+UpdCrc:
+;debb20e3
+;
+	mov	r5,-(sp)
+	mov	r4,-(sp)
+	mov	r3,-(sp)
+	mov	r2,-(sp)
+	mov	r1,-(sp)
+	mov	r0,-(sp)
+
+	mov	outptr,r5
+	mov	outbuf,r4
+1$:
+	mov	crc1val,r3
+	mov	crc2val,r2
+	movb	(r4)+,r0
+	xor	r3,r0
+	bic	#^c377,r0
+	asl	r0
+	asl	r0
+	mov	crctab(r0),crc1val
+	mov	crctab+2(r0),crc2val
+	ashc	#-8.,r2
+	bic	#^c377,r2
+	xor	r3,crc1val
+	xor	r2,crc2val
+	sob	r5,1$
+
+	tst	..g
+	beq	4$
+	mov	outptr,r5
+	mov	outbuf,r4
+2$:	movb	(r4)+,r0
+	bpl	3$
+	bic	#^c177,r0
+	movb	altstr(r0),-1(r4)
+3$:	sob	r5,2$
+4$:
+	mov	(sp)+,r0
+	mov	(sp)+,r1
+	mov	(sp)+,r2
+	mov	(sp)+,r3
+	mov	(sp)+,r4
+	mov	(sp)+,r5
+	return
+
+cback:
+	tst	..g
+	beq	4$
+	mov	r2,-(sp)
+	mov	outbuf,r1
+	mov	outptr,r2
+1$:	movb	(r1)+,r0
+	bpl	2$
+	bic	#^c177,r0
+	movb	GosStr(r0),-1(r1)
+2$:	sob	r2,1$
+	mov	(sp)+,r2
+4$:	return
+
+
+QExtract:
+	tst	fnop
+	beq	777$
+	sec
+	return
+777$:
+	tst	..q
+	beq	100$
+	.print	#yorn
+1$:	.ttyin
+	cmp	#3,r0
+	bne	2$
+	jmp	rStart
+2$:	bic	#240,r0
+	cmpb	#'Y,r0
+	bne	3$
+	.ttyout
+	call	4$
+	clc
+	return
+3$:	cmpb	#15,r0
+	bne	1$
+	call	6$
+	sec
+	return
+
+;drop crlf
+4$:	.ttyin
+	cmpb	#177,r0
+	bne	5$
+	.print	#back
+	tst	(sp)+
+	br	1$
+5$:	cmpb	#15,r0
+	bne	4$
+6$:	.ttyin
+	cmpb	#12,r0
+	bne	6$
+100$:	.ttyout	#15
+	.ttyout	#12
+	return
+
+;јХвЮФ Stored - ЯаЮбвЮХ ЯХаХЯШблТРЭШХ
+lstored:
+Estored:
+	Call	GetSym
+	bcs	1$
+	Call	PutSym
+	bcc	Estored
+1$:	return
+
+lshrunk:	call	eshrunk
+		return
+lredu:		call	eredu1
+		return
+limplode:	call	eimplode
+		return
+ltoken:		call	etoken
+		return
+ldeflate:	call	edeflate
+		return
+
+etokenize:
+Fail:	.print	#NonMet
+	.purge	#0
+	return
+
+	.psect	data,gbl
+
+DefExt::.Rad50	"ZIPZIPZIPZIP"
+DefNo::	.Rad50	"            "
+badcrc::.Ascii	"?ZE-E-ЅХбЮТЯРФХЭШХ. CRC32="<200>
+yorn::	.Ascii	" (Y/N)? N"
+back::	.Ascii	<33>"[D"<200>
+tBreak::.Asciz	<15><12>"Break signal !!!"
+NonMet::.Asciz	"?ZE-E-°ЫУЮаШвЬ ЭРЬ ЭХШЧТХбвХЭ"
+ErLoca::.Ascii	"?ZE-E-ѕиШСЮзЭРп бШУЭРвгаР ЫЮЪРЫмЭЮУЮ ЧРУЮЫЮТЪР: "<200>
+CntCre::.Ascii	"?ZE-E-ЅХ ЬЮУг бЮЧФРвм дРЩЫ: "<200>
+NotPla::.Asciz	"?LE-E-ЅХеТРвРХв ЬХбвР ЭР ФШбЪХ, ЭгЦЭЮ СЫЮЪЮТ= "<200>
+ErrRea::.Asciz	"?ZE-F-ѕиШСЪР звХЭШп ШЧ дРЩЫР"
+ErrWri::.Asciz	"?ZE-F-ѕиШСЪР ЧРЯШбШ Т дРЩЫ"
+CSMsg1::.Asciz	"?ZE-F-ЅХЯаРТШЫмЭРп бШУЭРвгаР ЪЮЭжР ФШаХЪвЮаШп"
+CSMsg::	.Asciz	"?ZE-F-ЅХЯаРТШЫмЭРп бШУЭРвгаР жХЭваРЫмЭЮУЮ ФШаХЪвЮаШп"
+exclm::	.Asciz	"?ZE-F-ЅХв ЯРЬпвШ Т RT11SJ."
+fexist::.Ascii	"?ZE-I-ДРШЫ гЦХ бгйХбвТгХв:   "<200>
+NoMemo::.Ascii	"?ZE-F-єЮЭзШЫРбм ЯРЬпвм ЯЮ 8k"<15><12>
+	.Asciz	"      їХаХЧРУагЧШвХ ЬРиШЭг"
+bazero::	.Ascii	<33>"[D0"<200>
+eofils::	.Asciz	"                 "<15><33>"[A#"
+BlckN:	.Ascii	" Block ="<200>
+AltStr::.Ascii	"°±Ііґµ¶·ё№є»јЅѕїАБВГДЕЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯ›њќҐ§ѓ„…†—•‘’‹ЊЎ"
+	.Ascii	"ЈЁ¦©¤ЄЌЋ“ђ–™”љЂЃ‚‡€‰ЉЏћџў «¬­®Їабвгдежзийклмнопрстуфхцчшщъыьэюя"
+GosStr:
+	.Ascii	"ПРСµ¶·ёТУФХЅѕЖЗЦЙ»јИНєЛ№КМО°±ІЧШЪїЩАДіВґБГЕЫЬЭЮЯЂЃ‚ѓ„…†‡€‰Љ‹ЊЌЋЏ"
+	.Ascii	"ђ‘’“”•–—™љ›њќћџ ЎўЈ¤Ґ¦§Ё©Є«¬­®Їабвгдежзийклмнопрстуфхцчшщъыьэюя"
+header:
+.Ascii	" Length    Method    Size     Date     Time    CRC-32    Name"<15><12>
+.Asciz	"¤¤¤¤¤¤¤¤  ¤¤¤¤¤¤¤¤ ¤¤¤¤¤¤¤¤ ¤¤¤¤¤¤¤¤  ¤¤¤¤¤   ¤¤¤¤¤¤¤¤   ¤¤¤¤"
+Total:	.ascii	<15><12>
+	.ascii	"TotalLen  NumFiles"<15><12>
+	.asciz	"¤¤¤¤¤¤¤¤  ¤¤¤¤¤¤¤¤"
+rrr0::	.ascii	<0><200>
+	.Even
+
+
+Emethod:	.word	lstored,lshrunk,lredu,lredu,lredu,lredu
+		.word	limplode,ltokenized,ldeflated,Fail,Fail,Fail,Fail,Fail,Fail
+
+
+Lv::		0
+Gp::		0
+Compr::		0
+mm:: Time::	0
+Dy:: Date::	0
+Crc1::		0
+Crc2::		0
+Comp1Size::	0
+Comp2Size::	0
+Un1CompSize::	0
+Un2CompSize::	0
+LenNam::	0
+Extra::		0
+LenCom::	0
+disk::		0
+ifa::		0
+efa1::		0
+efa2::		0
+roff1::		0
+roff2::		0
+
+		.ascii	"=="
+filAsc::	.blkw	20.
+
+Rtdate:		0	;Date format for rt11sj system
+
+Yr::		0	;Year ...
+Mo::		0	;Month
+;Dy:		0	;Day
+hh::		0	;Hour
+;mm:		0	;Minutes
+
+members::	0
+TotU1::		0
+TotU2::		0
+TotC1::		0
+TotC2::		0
+Next1::		0
+Next2::		0
+
+crc1val::		0
+crc2val::		0
+
+.macro	aArray	array
+d'array::	0,0,0
+.endm	aArray
+
+	aArray	prefix
+	aArray	suffix
+	aArray	Stack
+
+..g::	0
+..l::	0
+..q::	0
+..h::	0
+..o::	0
+..n::	0
+
+OutBuf::heap::	0	;free memory pointer
+curblock::	0	;read block
+curptr::	0	;read pointer
+outblock::	0	;write block
+outptr::	0	;write pointer
+stblock::	0	;save block
+stptr::		0	;save pointer
+
+fnop::	0
+FtkMem::	0	;Ptr to fremem proc | zero
+zipeof::	0
+
+sura::	0	;saved ura
+surb::	0	;saved urb
+
+limit::		.limit
+outDEV::	.blkw	1	;ШЬп ТлеЮФЭЮУЮ гбваЮЩбвТР
+bscca::		.blkw	1	;БЫЮТЮ бЮбвЮпЭШп вХаЬШЭРЫР
+addr::		.blkw	6.	;Used by .CSTAT
+Area::		.blkw	10.
+outspc::	.blkw	39.	;Used by .CSISPC
+Buffer::	.blkb	1000	;\Use like buffer of 2000 bytes
+DstBlk::	.blkb	1000	;/
+pattern::	.blkb	100.
+LinBuf::	.Blkb	121
+		.even
+	.end	Start
+                    

@@ -1,0 +1,893 @@
+;fucking banner inserting
+	.enabl	mcl
+	.mcall	.print
+main:	mov	#heap+2,heap
+	.settop	#-1
+	mov	r0,upper
+	.print	#100$
+	.gtlin	#buf200,#101$
+	mov	#buf200,r5
+	mov	#argf,r3
+	mov	#argk,r4
+;free space
+1$:	movb	(r5)+,r0
+	beq	99$
+	cmpb	#32.,r0
+	beq	1$
+	cmpb	#'-,r0
+	bne	2$
+;keyword
+	mov	r5,(r4)+
+	inc	nargk
+	br	3$
+;fileword
+2$:	dec	r5
+	mov	r5,(r3)+
+	inc	nargf
+;taking
+3$:	movb	(r5)+,r0
+	beq	99$
+	cmpb	#32.,r0
+	bne	3$
+	clrb	-1(r5)
+	br	1$
+99$:
+;going next
+	tst	nargf
+	bne	40$
+	.print	#102$
+	.exit
+40$:
+;testing keywords
+	mov	#argk,r5
+	mov	#105$,pbanam
+41$:	tst	nargk
+	beq	50$
+	dec	nargk
+	mov	(r5)+,r4
+	cmpb	#'b,(r4)
+	beq	42$
+	cmpb	#'B,(r4)
+	beq	42$
+	movb	(r4),r0
+	.ttyout
+	.print	#103$
+	br	41$
+42$:	inc	r4
+	mov	r4,pbanam
+	br	41$
+50$:
+;next step, loading banner
+	.print	#104$
+	.print	pbanam
+	mov	sp,r5
+	.csige	heap,#107$,pbanam
+	mov	r5,sp
+	bcc	51$
+52$:	.print	#106$
+	.exit
+51$:
+	mov	r0,heap
+	.wait	#3
+	bcs	52$
+	.readw	#area,#3,heap,#4096.,#0
+	bcc	53$
+	tstb	@#52
+	beq	53$
+	.print	#109$
+	.exit
+53$:	mov	heap,r5
+	mov	r5,pbabuf
+	clr	r4
+54$:	tstb	(r5)+
+	beq	55$
+	inc	r4
+	cmp	#8191.,r4
+	bne	54$
+55$:	
+	mov	r4,bansiz
+	bne	56$
+	.print	#111$
+	.exit
+56$:
+	.print	#110$
+	mov	r4,r0
+	call	priint
+	.ttyou	#15
+	.ttyou	#12
+	inc	r5
+	bic	#1,r5
+	mov	r5,heap
+	.close	#3
+	jmp	main1
+
+107$:	.rad50	/ALTALTALTALT/
+100$:	.asciz	"(C) Miha Gusew 1994, Insert banner to the Zip/Arj files"
+101$:	.asciz	<15>"banner> "<200>
+102$:	.ascii	"Use like:"<15><12>
+	.ascii	"banner> pattern[.zip] ... -keys"<15><12>
+	.asciz	"Keys is -bbanner  - set banner name (sy:banner.alt)"
+103$:	.asciz	" - Key is ignored"
+104$:	.asciz	"Banner name is: "<200>
+105$:	.asciz	"sy:banner.alt"
+106$:	.asciz	"Can't open banner file"
+109$:	.asciz	"Read error in banner file"
+110$:	.asciz	"Banner size is: "<200>
+111$:	.asciz	"Banner is NULL, abort operation"
+	.even
+
+main1:
+	mov	heap,frec
+	clr	@frec
+	add	#2,heap
+	mov	#frec,lrec
+	mov	#argf,100$
+1$:	tst	nargf
+	beq	2$
+	dec	nargf
+	mov	@100$,r5
+	add	#2,100$
+	mov	#101$,r1
+	mov	#102$,r2
+	call	parnam
+	mov	#101$,r1
+	call	dvopen
+	call	3$
+	br	1$
+2$:	jmp	main2
+
+100$:	.word	0	;* argf
+101$:	.blkb	20.	;
+102$:	.blkb	40.	;
+103$:	.word	0	;dp
+104$:	.word	0	;df
+
+3$:
+	call	dvnext
+	mov	r0,103$
+	bne	4$
+	return
+4$:	.print	#200$
+	.print	103$
+	mov	103$,r1
+	call	dropen
+	tst	r0
+	beq	3$
+5$:	call	drnext
+	mov	r0,104$
+	beq	3$
+	mov	104$,r1
+	call	trim
+	mov	#102$,r2
+	call	pat
+	bcs	5$
+	mov	104$,r1
+	call	trim
+	mov	r1,r2
+	mov	103$,r1
+	mov	#name,r3
+	call	build
+	.print	#202$
+	.print	#name
+	mov	heap,r1
+	mov	r1,@lrec
+	mov	r1,lrec
+	clr	(r1)+
+	mov	r1,(r1)
+	add	#4,(r1)+
+	mov	dtfil,(r1)+
+	mov	#name,r2
+6$:	movb	(r2)+,(r1)+
+	bne	6$
+	inc	r1
+	bic	#1,r1
+	mov	r1,heap
+	br	5$
+200$:	.asciz	"#device "<200>
+202$:	.asciz	"% "<200>
+	.even
+
+main2:
+	mov	#frec,r5
+	cmp	lrec,r5
+	bne	1$
+	.print	#102$
+	.exit
+1$:	mov	(r5),r5
+	beq	2$
+	mov	r5,-(sp)
+	mov	4(r5),dtfil
+	mov	2(r5),r5
+	mov	#name,r4
+3$:	movb	(r5)+,(r4)+
+	bne	3$
+	.ttyout	#'$
+	.ttyout	#32.
+	.print	#name
+	call	main3
+	mov	(sp)+,r5
+	br	1$
+2$:	.print	#100$
+	.exit
+100$:	.asciz	"Ok"
+102$:	.asciz	"No files"
+	.even
+
+
+
+main3:	mov	#wname,r2
+	mov	#name,r1
+4$:	movb	(r1)+,(r2)+
+	bne	4$
+	movb	#'[,-1(r2)
+	movb	#'-,(r2)+
+	movb	#'1,(r2)+
+	movb	#'],(r2)+
+	movb	#'=,(r2)+
+	mov	#name,r1
+5$:	movb	(r1)+,(r2)+
+	bne	5$
+	.date
+	mov	r0,-(sp)
+	mov	dtfil,200$
+	.sdttm	#area,#200$
+	mov	sp,r5
+	.csige	heap,#100$,#wname
+	mov	r5,sp
+	bcc	7$
+6$:	.print	#101$
+	.print	#wname
+	.exit
+7$:	mov	r0,heap
+	mov	(sp)+,200$
+	.sdttm	#area,#200$
+	.wait	#0
+	bcs	6$
+	.wait	#3
+	bcs	6$
+	call	oneban
+	.close	#3
+	.purge	#0
+	return
+200$:	.word	0,-1,-1
+100$:	.rad50	/            /
+101$:	.asciz	"Error in CSI parsing of: "<200>
+	.even
+
+build:
+	movb	(r1)+,(r3)
+	beq	1$
+	cmpb	#':,(r3)
+	beq	1$
+	inc	r3
+	br	build
+1$:	movb	#':,(r3)+
+2$:	movb	(r2)+,(r3)+
+	bne	2$
+	return
+
+
+
+
+state:	.word	0
+dname:	.blkb	10.
+dvOpen:
+	clr	state
+	cmpb	#'*,(r1)
+	bne	1$
+	mov	#100$,r1
+1$:	mov	#dname,r2
+	mov	r1,-(sp)
+2$:	movb	(r1)+,(r2)+
+	bne	2$
+	clrb	(r2)+
+	clrb	(r2)+
+	mov	(sp)+,r1
+	tstb	(r1)
+	bne	3$
+	movb	#'D,dname
+	movb	#'K,dname+1
+	clrb	dname+2
+	return
+3$:
+	cmpb	2(r1),#'*
+	bne	5$
+	mov	#'0,state
+5$:	return
+100$:	.asciz	"DK*"
+	.even
+
+dvnext:
+	clr	r0
+	cmp	state,#'8
+	bne	1$
+	return
+1$:	tst	state
+	bne	2$
+	mov	#'8,state
+	br	3$
+2$:	movb	state,dname+2
+	inc	state
+3$:	mov	#dname,r0
+	return
+
+
+trim:
+	mov	#100$,r2
+1$:	movb	(r1)+,(r2)
+	beq	2$
+	cmpb	#40,(r2)
+	beq	1$
+	inc	r2
+	br	1$
+2$:	mov	#100$,r1
+	return
+100$:	.blkb	100.
+
+
+
+wname:	.blkb	100.
+cat:	.blkw	512.
+seg:	0
+ptr:	0
+pos:	0
+
+drOpen:
+	mov	r1,r2
+	mov	#wname,r3
+1$:	movb	(r2),(r3)
+	bne	2$
+	movb	#':,(r3)
+2$:	cmpb	#':,(r3)
+	beq	3$
+	inc	r2
+	inc	r3
+	br	1$
+3$:	clrb	1(r3)
+	mov	sp,r5
+	.csisp	#100$,#101$,#wname
+	mov	r5,sp
+	bcc	4$
+	clr	r0
+	return
+4$:	.dstat	#dstblk,#100$+30.
+	bcs	5$
+	tst	dstblk+4
+	bne	5$
+	.fetch	heap,#100$+30.
+	bcs	5$
+	mov	r0,heap
+5$:	.lookup	#area,#7,#100$+30.
+	bcc	6$
+	.print	#107$
+	.exit
+6$:	mov	#cat,ptr
+	mov	#4000,cat
+	mov	#1,cat+2
+	mov	#1,r0
+	return
+100$:	.blkw	40.
+101$:	.rad50	/            /
+107$:	.asciz	"Can't open directory"
+	.even
+dstblk:	.blkw	20.
+
+drnext:
+	mov	@ptr,r0
+	bic	#377,r0
+	cmp	#4000,r0
+	bne	2$
+	mov	cat+2,seg
+	bne	3$
+4$:	.close	#7
+	clr	r0
+	return
+3$:	mov	seg,pos
+	add	#2,pos
+	asl	pos
+	.readw	#area,#7,#cat,#512.,pos
+	bcs	4$
+	mov	#cat+10.,ptr
+	br	drnext
+2$:	mov	ptr,r1
+	mov	(r1),r0
+	bic	#377,r0
+	cmp	#2000,r0
+	bne	6$
+	cmp	#^RBAD,6(r1)
+	bne	1$
+6$:	add	#14.,ptr
+	add	cat+6,ptr
+	br	drnext
+1$:	mov	#wname,r4
+	mov	ptr,r3
+	mov	14(r3),dtfil
+	add	#2,r3
+	mov	#2,r5
+	call	r50toa
+	mov	#wname+7,r4
+	mov	ptr,r3
+	add	#6,r3
+	mov	#1,r5
+	call	r50toa
+	movb	#'.,wname+6
+	clrb	wname+10.
+	add	#14.,ptr
+	add	cat+6,ptr
+	mov	#wname,r0
+	return
+
+r50toa:	;r4-output string,r5-number of words,r3-input buffer
+	mov	(r3)+,r1
+	clr	r0
+	div	#50,r0
+	mov	r1,-(sp)
+	mov	r0,r1
+	clr	r0
+	div	#50,r0
+	call	Rad1
+	mov	r1,r0
+	call	Rad1
+	mov	(sp)+,r0
+	call	Rad1
+	sob	r5,r50toa
+	return
+
+Rad1:
+	mov	r2,-(sp)
+	mov	#40,r2
+	tst	r0
+	beq	1$
+	mov	#'.,r2
+	cmp	#34,r0
+	beq	1$
+	mov	#'$,r2
+	cmp	#33,r0
+	beq	1$
+	mov	r0,r2
+	add	#60-36,r2
+	cmp	#36,r0
+	blos	1$
+	mov	r0,r2
+	add	#101-1,r2
+1$:	movb	r2,(r4)+
+	mov	(sp)+,r2
+	return
+
+pat:
+   tstb (r2)
+   bne 1$
+   tstb (r1)
+   bne 2$
+5$:tst (pc)+		;match
+2$:sec			;mismatch
+   return
+1$:
+   cmpb #'*,(r2)
+   bne 3$
+      tstb 1(r2)
+      beq 5$
+      inc r2
+7$:
+        cmpb (r1),(r2)
+        beq 9$
+        cmpb #'?,(r2)
+        bne 8$
+9$:      mov r2,-(sp)
+         mov r1,-(sp)
+         cmpb (r1)+,(r2)+
+         call pat
+         mov (sp)+,r1
+         mov (sp)+,r2
+         bcs 8$
+         return
+8$:   inc r1
+      tstb -1(r1)
+      bne 7$
+      br 2$
+3$:
+      tstb (r1)
+      beq 4$
+      cmpb #'?,(r2)
+      beq 6$
+      cmpb (r1),(r2)
+      bne 4$
+6$:     mov r2,-(sp)
+        mov r1,-(sp)
+	cmpb (r1)+,(r2)+
+        call pat
+        mov (sp)+,r1
+        mov (sp)+,r2
+        return
+4$:sec
+   return
+
+parnam:
+	clr	1$
+	clr	2$
+	mov	r5,r3
+10$:	cmpb	#'.,(r3)
+	bne	11$
+	inc	1$
+11$:	cmpb	#':,(r3)
+	bne	12$
+	inc	2$
+12$:	tstb	(r3)+
+	bne	10$
+	tst	2$
+	beq	13$
+	mov	r5,r3
+15$:	cmpb	#':,(r3)
+	beq	16$
+	movb	(r3)+,(r1)+
+	br	15$
+16$:	clrb	(r1)+
+	inc	r3
+	tstb	(r3)
+	bne	14$
+	mov	#101$,r3
+17$:	movb	(r3)+,(r2)+
+	bne	17$
+	return
+13$:	movb	#'D,(r1)+
+	movb	#'K,(r1)+
+	clrb	(r1)
+	mov	r5,r3
+14$:	cmpb	#'.,(r3)
+	bne	18$
+	movb	#'*,(r2)+
+18$:	movb	(r3)+,r0
+	call	toupper
+	movb	r0,(r2)+
+	bne	18$
+19$:	tst	1$
+	bne	20$
+	movb	#'.,-1(r2)
+	movb	#'Z,(r2)+
+	movb	#'I,(r2)+
+	movb	#'P,(r2)+
+	clrb	(r2)
+20$:	return
+
+	return
+1$:	.word	0
+2$:	.word	0
+101$:	.asciz	"*.ZIP"
+	.even
+
+
+toupper:
+	cmpb	#'a,r0
+	bhi	1$
+	cmpb	r0,#'z
+	bhi	1$
+	bic	#40,r0
+1$:	return
+
+priint:
+	clr	-(sp)
+1$:
+	mov	r0,r1
+	clr	r0
+	div	#10.,r0
+	add	#48.,r1
+	mov	r1,-(sp)
+	tst	r0
+	bne	1$
+2$:
+	mov	(sp)+,r0
+	bne	3$
+	return
+3$:	.ttyout
+	br	2$
+
+
+oneban:
+	.cstat	#area,#3,#100$
+	mov	100$+4,filsiz
+	.print	#101$
+	mov	filsiz,r0
+	call	priint
+	.ttyout	#15
+	.ttyout	#12
+	tst	filsiz
+	bne	1$
+	.print	#102$
+	return
+1$:	.readw	#area,#3,#cat,#256.,#0
+	bcc	2$
+3$:	.print	#103$
+	.print	#name
+	return
+2$:	cmp	#"PK,cat
+	beq	4$
+	jmp	301$
+4$:	mov	filsiz,r5
+;preclearing for alhoritm
+	mov	#cat,r0
+	mov	#256.,r2
+8$:	clr	(r0)+
+	sob	r2,8$
+;main searching cycle
+6$:	dec	r5
+	cmp	r5,#-1
+	bne	9$
+	.print	#105$
+9$:
+;move old area
+	mov	#cat,r0
+	mov	#cat+512.,r1
+	mov	#256.,r2
+7$:	mov	(r0)+,(r1)+
+	sob	r2,7$
+	.readw	#area,#3,#cat,#256.,r5
+	bcc	10$
+	jmp	3$
+10$:	mov	#cat,r1
+	mov	#1020.,r2
+11$:	cmpb	#'P,(r1)
+	bne	12$
+	cmpb	#'K,1(r1)
+	bne	12$
+	cmpb	#5,2(r1)
+	bne	12$
+	cmpb	#6,3(r1)
+	beq	13$
+12$:	inc	r1
+	sob	r2,11$
+	br	6$
+13$:	mov	r5,isblk
+	add	#20.,r1
+	mov	r1,isptr
+;copying
+	.print	#108$
+	cmp	heap,upper
+	blo	80$
+79$:	.print	#109$
+	.exit
+80$:	mov	upper,r1
+	sub	heap,r1
+	clr	r0
+	ashc	#-9.,r0
+	mov	r1,110$
+	beq	79$
+	mov	r1,r0
+	call	priint
+	.ttyout	#15
+	.ttyout	#12
+	clr	r5
+	mov	isblk,r4
+14$:	tst	r4
+	beq	15$
+	mov	110$,r3
+	cmp	r3,r4
+	blos	16$
+	mov	r4,r3
+16$:	sub	r3,r4
+	mov	r3,r2
+	ash	#8.,r3
+	.readw	#area,#3,heap,r3,r5
+	bcc	17$
+	jmp	3$
+17$:	.writw	#area,#0,heap,r3,r5
+	bcc	18$
+21$:	.print	#107$
+	.print	#name
+	return
+18$:	add	r2,r5
+	br	14$
+;endcopy
+15$:	
+	mov	isblk,r5
+	mov	isptr,r4
+	movb	bansiz,(r4)+
+	movb	bansiz+1,(r4)+
+	mov	bansiz,r3
+	mov	pbabuf,r2
+19$:	tst	r3
+	beq	20$
+	cmp	r4,#cat+1024.
+	beq	20$
+	movb	(r2)+,(r4)+
+	dec	r3
+	br	19$
+20$:	bit	#777,r4
+	beq	73$
+	clrb	(r4)+
+	br	20$
+73$:	mov	r4,r1
+	sub	#cat,r1
+	clc
+	ror	r1
+	.writw	#area,#0,#cat,r1,r5
+	bcs	21$
+	add	#2,r5
+	mov	#cat,r4
+	tst	r3
+	bne	19$
+	.close	#3
+	.close	#0
+	.print	#112$
+	return
+301$:
+	mov	#cat,r4
+	cmp	#165140,(r4)+
+	beq	302$
+	.print	#104$
+	.print	#name
+	return
+302$:	.print	#113$
+	.print	#108$
+	add	#40,r4	
+	mov	upper,r1
+	sub	heap,r1
+	clr	r0
+	ashc	#-10.,r0
+	mov	r1,110$
+	bne	303$
+	.print	#109$
+	.exit
+303$:	mov	r1,r0
+	call	priint
+	.ttyout	#15
+	.ttyout	#12
+	clr	400$
+	clr	401$
+	mov	filsiz,402$
+	clr	403$
+	clr	r5		;input ptr in bytes
+	mov	heap,510$+4
+	clr	600$
+	mov	110$,r1
+	mov	r1,602$
+	ash	#8.,r1
+	mov	r1,604$
+	asl	r1
+	mov	r1,601$
+	mov	heap,603$
+	add	r1,603$
+	mov	603$,550$+2
+	clr	r4
+	mov	#42,r2
+;copy header
+310$:	call	500$
+	bcs	350$
+	call	550$
+	sob	r2,310$
+;copy name
+311$:	call	500$
+	bcs	350$
+	mov	r0,-(sp)
+	call	550$
+	mov	(sp)+,r0
+	tstb	r0
+	bne	311$
+;drop header
+	mov	#-1,r2
+312$:	inc	r2
+	call	500$
+	bcs	350$
+	tstb	r0
+	bne	312$
+;insert new header
+	mov	603$,r3
+	sub	r2,2(r3)
+	add	bansiz,2(r3)
+	mov	bansiz,r2
+	mov	pbabuf,r3
+313$:	movb	(r3)+,r0
+	call	550$
+	sob	r2,313$
+	clr	r0
+	call	550$
+;copy last bytes
+390$:	call	500$
+	bcs	391$
+	call	550$
+	br	390$
+391$:	bit	#777,r4
+	beq	392$
+	clr	r0
+	call	550$
+	br	391$
+392$:	tst	r4
+	beq	393$
+	clc
+	ror	r4
+	.writw	#area,#0,603$,r4,600$
+	bcc	393$
+	jmp	21$
+393$:	.close	#0
+	.close	#3
+	.print	#112$
+	return
+350$:	.print	#114$
+	.exit
+
+600$:	.word	0	;output block number
+601$:	.word	0	;output number of bytes
+602$:	.word	0	;output number of blocks
+603$:	.word	0	;output buffer adress
+604$:	.word	0	;output number of words
+
+;put one byte to
+550$:	movb	r0,0(r4)
+	inc	r4
+	cmp	r4,601$
+	beq	551$
+	return
+551$:	.writw	#area,#0,603$,604$,600$
+	bcc	552$
+	jmp	21$
+552$:	add	602$,600$
+	clr	r4
+	return
+
+;get one byte from
+500$:	cmp	r5,401$
+	bne	510$
+	sub	403$,402$
+	bne	501$
+	sec
+	return
+501$:	add	403$,400$
+	mov	110$,r1
+	cmp	r1,402$
+	blos	502$
+	mov	402$,r1
+502$:	mov	r1,403$
+	ash	#8.,r1
+	.readw	#area,#3,heap,r1,400$
+	bcc	503$
+	jmp	3$
+503$:	asl	r1
+	mov	r1,401$
+	clr	r5
+510$:	clr	r0
+	bisb	0(r5),r0
+	inc	r5
+	clc
+	return
+
+400$:	.word	0	;input block number
+401$:	.word	0	;input length in bytes
+402$:	.word	0	;how many input blocks ostalosx
+403$:	.word	0	;skolxko blokow zagruveno
+
+100$:	.blkw	6
+110$:	.word	0
+101$:	.asciz	"File length in blocks: "<200>
+102$:	.asciz	"File is fucking EMPTY !!!"
+103$:	.asciz	"Read error in: "<200>
+107$:	.asciz	"Write error in: "<200>
+104$:	.asciz	"This isn't ZIP file: "<200>
+105$:	.asciz	"Signature <End of Central Dir> not found"
+108$:	.asciz	"Inserting, buffer size (blocks) = "<200>
+109$:	.asciz	"Not enough for copying"
+112$:	.asciz	"OK"
+113$:	.asciz	"Oh, this is ARJ"
+114$:	.asciz	"Unexpected end of header"
+	.even
+
+dtfil:	.word	0
+isblk:	.word	0
+isptr:	.word	0
+filsiz:	.word	0
+pbanam:	.word	0	;
+pbabuf:	.word	0	;
+bansiz:	.word	0	;
+nargf:	.word	0
+nargk:	.word	0
+frec:	.word	0
+lrec:	.word	0
+name:	.blkb	100.
+buf200:	.blkb	200.
+argf:	.blkw	100.
+argk:	.blkw	100.
+area:	.blkw	10.
+upper:	.word	0
+heap:	.word	0
+
+	.end	main
+
+                                                                                                                                                                                                                                                                                                                                                                                                   

@@ -1,0 +1,513 @@
+	.dsabl	gbl
+	.mcall	.ttyout
+; ЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЁ
+;Ѕ Remote access Ѕ
+;ЃЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЂ
+	.inclu	"sy:p16mac.mac"		; ЄЄЄЄЄЄЄЄЁ
+	.asect				;Ѕ Header Ѕ
+	.=0				;Ѕ        Ѕ
+	.word	"PC,0,0,-1		;Ѕ        Ѕ
+	.asciz	"Remote_Access_0"	;ЃЄЄЄЄЄЄЄЄЂ
+	.even
+	.=44
+	.word	41410
+	.psect
+start:
+	br	1$
+	jmp	process
+1$:	mov	#1000,sp
+	clr	fchng
+	.mcall	.print
+	.print	#prgtit
+	call	curset
+	.mcall	.gtlin
+	.gtlin	#linbuf,#askfir
+	cmpb	#'Y,linbuf
+	beq	3$
+	cmpb	#'y,linbuf
+	beq	3$
+	jmp	12$
+3$:	.gtlin	#linbuf,#askport
+	movb	linbuf,r0
+	tstb	r0
+	beq	4$
+	cmpb	#'0,r0
+	beq	2$
+	cmpb	#'1,r0
+	beq	2$
+	cmpb	#'2,r0
+	beq	2$
+	.print	#badport
+	br	3$
+2$:	bic	#^C3,r0
+	cmp	r0,port
+	beq	4$
+	inc	fchng
+	mov	r0,port
+4$:	.print	#prospd
+5$:	.gtlin	#linbuf,#askspd
+	tstb	linbuf
+	beq	6$
+	mov	#2,r1
+	cmp	#"57,linbuf
+	beq	7$
+	asl	r1
+	cmp	#"28,linbuf
+	beq	7$
+	mov	#6,r1
+	cmp	#"19,linbuf
+	beq	7$
+	mov	#8.,r1
+	cmp	#"14,linbuf
+	beq	7$
+	mov	#12.,r1
+	cmp	#"96,linbuf
+	beq	7$
+	asl	r1
+	cmp	#"48,linbuf
+	beq	7$
+	asl	r1
+	cmp	#"24,linbuf
+	beq	7$
+	asl	r1
+	cmp	#"12,linbuf
+	beq	7$
+	mov	#384.,r1
+	cmp	#"30,linbuf
+	beq	7$
+	cmpb	#'#,linbuf
+	beq	8$
+10$:	.print	#badspd
+	br	5$
+8$:	mov	#linbuf+1,r5
+	clr	r1
+9$:	clr	r0
+	bisb	(r5)+,r0
+	beq	77$
+	mul	#10.,r1
+	sub	#'0,r0
+	bmi	10$
+	cmp	#'9,r0
+	blo	10$
+	add	r0,r1
+	br	9$
+77$:	mov	#"**,linbuf
+7$:	mov	linbuf,idport
+	cmp	r1,diver
+	beq	6$
+	inc	fchng
+	mov	r1,diver
+6$:	.gtlin	#linbuf,#askrin
+	movb	linbuf,r0
+	beq	21$
+	cmpb	#'0,r0
+	beq	20$
+	cmpb	#'1,r0
+	beq	20$
+	cmpb	#'2,r0
+	beq	20$
+	.print	#badrin
+	br	6$
+20$:	bic	#^c3,r0
+	tst	port
+	bne	27$
+	cmp	#2,r0
+	bne	27$
+	.print	#ilcad
+	br	6$
+27$:	cmp	r0,rindet
+	beq	21$
+	inc	fchng
+	mov	r0,rindet
+21$:	tst	fchng
+	bne	11$
+15$:	.print	#nochng
+	br	12$
+11$:	.gtlin	#linbuf,#askini
+	cmpb	#'y,linbuf
+	beq	50$
+	cmpb	#'Y,linbuf
+	bne	60$
+50$:	.gtlin	#istring,#prini
+60$:	.gtlin	#linbuf,#askans
+	cmpb	#'y,linbuf
+	beq	70$
+	cmpb	#'Y,linbuf
+	bne	80$
+70$:	.gtlin	#astring,#prans
+80$:
+100$:	.gtlin	#linbuf,#askwri
+	cmpb	#'y,linbuf
+	beq	14$
+	cmpb	#'Y,linbuf
+	bne	15$
+14$:	.print	#yachng
+	.mcall	.writw
+	.writw	#linbuf,#17,#1000,#<<linbuf-776>/2>,#1
+	bcc	13$
+	.print	#badwri
+	emt	^o350
+13$:	.print	#yechng
+12$:	.gtlin	#linbuf,#askterm
+	cmpb	#'y,linbuf
+	beq	115$
+	cmpb	#'Y,linbuf
+	beq	115$
+	.print	#tosys
+	emt	^o350
+115$:	.print	#toterm
+	jmp	terminal
+prgtit:	.ascii	" ЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЁ"<15><12>
+	.ascii	"Ѕ(C) Miha Gusew, 1994   Ѕ"<15><12>
+	.ascii	"Ѕ    ЄЁ       ЄЁ        Ѕ"<15><12>
+	.ascii	"Ѕ<< ЉІЂEMOTE ЉЄЇCCESS >>Ѕ"<15><12>
+	.asciz	"ЃЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЄЂ"<15><12>
+askfir:	.asciz	<15>"Изменить установки (y/n) ?"<200>
+askport:.asciz	<15>"Введите номер порта (0-внутренний,1,2-внешние): "<200>
+badport:.asciz	"Неправильный номер порта, повторите ввод."
+badspd:	.asciz	"Неправильная скорость или делитель, повторите ввод."
+prospd:
+.ascii	<15><12>"Введите скорость работы порта или делитель на 115200Гц."<15><12>
+.ascii	"(Скорости: 300,1200,2400,4800,9600,14400,19200,28800,57600;"<15><12>
+.asciz	"или делитель в виде #число-в-десятичной-системе-счисления)"<15><12>
+askspd:	.asciz	<15>"Введите скорость или делитель: "<200>
+askrin:	.asciz	<15>"Анализ звонка (0-CD,1-'RING',2-RI(ext)): "<200>
+ilcad:	.asciz	"Нельзя использовать RI, с внутренним портом."
+badrin:	.asciz	"Неправильный номер, повторите ввод."<200>
+nochng:	.asciz	"Параметры не изменялись."
+yachng:	.asciz	"Запись параметров..."<200>
+yechng:	.asciz	"Параметры записаны."
+badwri:	.asciz	"Ошибка записи параметров на диск (ошибка оверлея?)"
+askwri:	.asciz	<15>"Записать на диск (y/n) ? "<200>
+askterm:.asciz	<15>"Запустить мини-терминал (y/n) ? "<200>
+tosys:	.asciz	"Конец работы."
+toterm:	.asciz	"*** RA Terminal, Use 'і' for EXIT from terminal ***"
+exterm:	.asciz	<15><12>"*** Конец работы с терминалом ***"
+askini:	.asciz	<15>"Изменить строку инициализации (y/n) ? "<200>
+askans:	.asciz	<15>"Изменить строку ответа на звонок (y/n) ? "<200>
+prini:	.asciz	<15>"Init string: "<200>
+prans:	.asciz	<15>"Ans. string: "<200>
+	.even
+rindet:	2
+fchng:	0
+idport:	.word	"96
+
+curset:	;print current settings
+	.print	#1$
+	mov	port,r0
+	add	#'0,r0
+	.ttyout
+	mov	#2$,r0
+	tst	port
+	beq	110$
+	mov	#3$,r0
+110$:	.print
+	.print	#4$
+	mov	idport,r0
+	.ttyout
+	movb	idport+1,r0
+	.ttyout
+20$:	.print	#5$
+	mov	diver,r0
+	call	priint
+	.print	#6$
+	mov	#7$,r0
+	tst	rindet
+	beq	30$
+	mov	#8$,r0
+	cmp	#1,rindet
+	beq	30$
+	mov	#9$,rindet
+30$:	.print
+	.print	#10$
+	.print	#istring
+	.print	#11$
+	.print	#astring
+	.print	#12$
+	return
+1$:	.asciz	/Порт #/<200>
+2$:	.asciz	/ - внутренний: UART 8251/
+3$:	.asciz	/ - внешняя карточка/
+4$:	.asciz	/Скорость = /<200>
+5$:	.asciz	/   Делитель = #/<200>
+6$:	.asciz	<15><12>/Реакция на: /<200>
+8$:	.asciz	/"RING"/
+7$:	.asciz	/CD/
+9$:	.asciz	/RI/
+10$:	.asciz	/Init string: /<200>
+11$:	.asciz	/Answ.string: /<200>
+12$:	.asciz	/Є Є Є Є Є Є Є Є Є Є Є Є Є Є Є Є Є/
+	.even
+
+
+priint:
+	clr	-(sp)
+1$:	mov	r0,r1
+	clr	r0
+	div	#10.,r0
+	add	#48.,r1
+	mov	r1,-(sp)
+	tst	r0
+	bne	1$
+2$:	mov	(sp)+,r0
+	bne	3$
+	return
+3$:	.ttyout
+	br	2$
+
+
+send:
+	mov	#linbuf,r0
+1$:	tstb	(r1)
+	beq	10$
+	cmpb	#'!,(r1)
+	beq	2$
+	movb	(r1)+,(r0)+
+	br	1$
+2$:	movb	#15,(r0)+
+	inc	r1
+	br	1$
+10$:	mov	ibase,r4
+	mov	#linbuf,r0
+20$:	tstb	(r0)
+	beq	30$
+	mov	#1,r3
+	waitint	#m.tio
+	tstb	4(r4)
+	bpl	20$
+	movb	(r0)+,6(r4)
+	tst	(r4)
+	tst	2(r4)
+	br	20$
+30$:	return
+
+
+
+quit:	bis	#100,@#177560
+	bis	#100,@#177564
+	.print	#exterm
+	emt	^o350
+
+
+terminal:
+	call	setspd
+	bic	#100,@#177560
+	bic	#100,@#177564
+	mov	ibase,r5
+	mov	#mtos,r4
+	mov	#copr,r3
+stomc:	call	(r3)
+stom:	tstb	@#177560
+	bpl	stomc
+	mov	@#177562,r1
+	cmpb	#'і,r1
+	beq	quit
+	tst	(pc)+
+1$:	call	(r3)
+	tstb	4(r5)
+	bpl	1$
+	mov	r1,6(r5)
+	nop
+	br	stom
+
+
+mtosc:	call	(r3)
+mtos:	tstb	(r5)
+	nop
+	bpl	mtosc
+	mov	2(r5),r2
+	nop
+	tst	(pc)+
+1$:	call	(r3)
+	tstb	@#177564
+	bpl	1$
+	mov	r2,@#177566
+	nop
+	br	mtos
+
+copr:	rts	r4
+
+setspd:	mov	#166760,r0
+	mov	#176540,ibase
+	cmp	#1,port
+	beq	1$
+	tst	port
+	bne	2$
+	mov	#176500,ibase
+	mov	#1717,@#176502
+	nop
+	return
+1$:	mov	#167760,r0
+	mov	#176520,ibase
+2$:	bis	#200,6(r0)
+	movb	diver,(r0)
+	movb	diver+1,2(r0)
+	bic	#200,6(r0)
+	bis	#1,10(r0)
+	mov	r0,base
+	return
+
+
+process:
+	mov	#1000,sp
+	setpri	#10000
+	call	setspd
+	call	instvt
+	clr	@#41050
+1$:	tstb	@#177564
+	nop
+	bpl	1$
+	mov	#prgtit,@#177566
+	nop
+	mov	#istring,r1
+	call	send
+	RESPON	#entra
+	clr	-(sp)
+
+wait:	mov	#4$,(sp)
+	cmp	#1,rindet
+	beq	1$
+	mov	#5$,(sp)
+1$:	call	@(sp)+
+	clr	@#41050
+	mov	#7,r5
+2$:	mov	#10,r3
+	waitint	#m.tio
+	tst	rindet
+	beq	7$
+	cmp	#1,rindet
+	beq	3$
+	call	@(sp)+
+	br	2$
+
+3$:	mov	ibase,r0
+	tstb	(r0)
+	bpl	2$
+	movb	2(r0),r0
+	nop
+	call	@(sp)+
+	br	2$
+
+4$:	call	@(sp)+
+44$:	cmpb	#'R,r0
+	bne	4$
+	call	@(sp)+
+	cmpb	#'I,r0
+	bne	44$
+	call	@(sp)+
+	cmpb	#'N,r0
+	bne	44$
+	call	@(sp)+
+	cmpb	#'G,r0
+	bne	44$
+	br	8$
+
+5$:	call	@(sp)+
+	call	6$
+	beq	2$
+	bne	8$
+
+6$:	mov	base,r0
+	bit	#100,14(r0)
+	return
+
+7$:	call	iscd
+	bcs	2$
+	sob	r5,2$		;wait for 1 second CD
+	br	9$
+
+8$:	mov	#astring,r1
+	call	send
+
+9$:	RESPON	#parol
+	mov	#200.,r5	;wait for 4 second for run LOGIN
+10$:	mov	#1,r3
+	waitint	#m.tio		;and drop modem response
+	mov	ibase,r0
+	tst	(r0)
+	nop
+	tst	2(r0)
+	nop
+	sob	r5,10$
+	mov	#1,@#41050
+
+ok:	mov	#1,r3
+	waitint	#m.tio
+	call	iscd
+	bcs	wait
+	tst	@#41026
+	beq	ok
+	mov	ibase,r0
+	tstb	(r0)
+	nop
+	bpl	ok
+	movb	2(r0),resp
+	nop
+	RESPON	#resp
+	br	ok
+
+
+resp:	0
+
+
+instvt:	tstb	@#177564
+	bpl	instvt
+	mov	@#hr4,@#ur4	;searching vt emulator
+	mov	@#hr5,@#ur5
+	mov	@#hr6,@#ur6
+	mov	@#<7566+l.rda>,r1	;r1=*dreg
+	mov	6(r1),r1		;r1=*dprc
+	mov	p.ur0(r1),@#ur2
+	mov	p.ur1(r1),@#ur1
+	mov	#scrct,r1
+	mov	#41040,r2
+1$:	mov	(r1)+,(r2)+
+	cmp	#ibase+2,r1
+	bne	1$
+	mov	#4737,@#21700
+	mov	#1040,@#21702
+ret:	return
+
+scrct:	mov	r1,-(sp)
+	mov	ibase,r1
+1$:	tst	#1
+	beq	done
+	call	iscd
+	bcs	done
+	tstb	4(r1)
+	nop
+	bpl	1$
+	mov	r0,6(r1)
+	nop
+done:	mov	(sp)+,r1
+	cmp	#177,r0
+	return
+iscd:
+	mov	r0,-(sp)
+	tst	port
+	beq	3$
+	mov	base,r0
+	bit	#200,14(r0)
+	beq	1$
+	br	2$
+3$:	tstb	@#161062
+	bmi	1$
+2$:	tst	(pc)+
+1$:	sec
+	mov	(sp)+,r0
+	return
+port:	.word	1
+diver:	.word	12.
+base:	0
+ibase:	0
+
+entra:	.asciz	"RAINIT"<15>
+parol:	.asciz	"RADOOR"<15>
+	.even
+istring:.asciz	"atz!"
+	.blkb	82.-5.
+astring:.asciz	"ata!"
+	.blkb	82.-5.
+linbuf:
+	.end	start
+                                                                                                                                                                                                                                  

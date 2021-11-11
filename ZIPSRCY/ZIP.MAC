@@ -1,0 +1,506 @@
+.REM						%
+ ¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤Ў
+ҐјШеР ігбХТ				Ґ
+Ґ””””””””””				Ґ
+Ґ°аеШТРвЮа дРЩЫЮТ Т дЮаЬРвХ ZIP.	Ґ
+ҐАХРЫШЧЮТРЭл ЬХвЮФл:			Ґ
+Ґ	Stored				Ґ
+Ј¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤ў
+						%
+
+	.Title	Zip
+	.Mcall	.print,.ttyin,.ttyout
+	.Enabl	MCL
+
+b.len==	2000
+
+	.psect	Main,gbl
+ReStart::
+	.ttyou	#12
+	tst	Ftkmem
+	beq	1$
+	call	@Ftkmem
+1$:	.srese
+	.scca	#area,#0
+	bic	#10000,@#44
+Start:
+	clr	FtkMem
+	clr	lof1
+	clr	lof2
+	clr	o.1
+	clr	o.2
+	clr	oo.1
+	clr	oo.2
+	clr	o.block
+	clr	o.ptr
+	clr	FtkMEM
+	mov	#1000,sp
+	call	Command
+	bcs	ReStart
+
+	clr	BSCCA
+	.SCCA	#area,#BSCCA
+	bis	#10000,@#44
+
+	;ѕвЪалвм ТлеЮФЭЮЩ дРЩЫ
+	;Ш ЭРзРвм ЯЮЫЧРвм ЯЮ ФШаХЪвЮаШпЬ
+	;¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤
+	jmp	OpOutput
+
+;АРСЮвР б дРЩЫРЬШ
+;¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤
+Proc::
+	mov	heap1,r0
+	mov	r0,i.buf
+	add	#i.len,r0
+	mov	r0,o.buf
+	add	#o.len,r0
+	mov	r0,mesto
+	add	#b.len,r0
+	.settop
+	bcc	1$
+	.print	#Nomem
+	jmp	ReStart
+
+1$:
+	.print	#flpx
+	mov	#name1,r1
+2$:	movb	(r1)+,r0
+	beq	3$
+	.ttyout
+	br	2$
+3$:
+
+	clr	r0
+	mov	fillen,r1
+	ashc	#9.,r0
+	mov	r0,U2Size
+	mov	r1,U1Size
+	call	PutLong
+	.ttyout	#40
+	.ttyout	#40
+
+	call	QInsert
+	bcc	4$
+	return
+
+	;ЅРзРЫШ ЯаЮжХбб аРСЮвл
+	;¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤
+4$:	tst	..s..
+	beq	5$
+	clr	RMethod
+5$:	tst	fillen
+	bne	77$
+	clr	rmethod			;File_Length=0  ->  Storing
+77$:	mov	RMethod,r1
+	asl	r1
+	mov	TNRMTD(r1),r0
+	.print
+	mov	r1,-(sp)
+	call	TakHead
+	mov	U1size,bu1s
+	mov	U2size,bu2s
+
+	;Init Input
+	;¤¤¤¤¤¤¤¤¤¤
+	mov	#-1,i.Block
+	mov	#i.len,i.Ptr
+	mov	#3,i.Chan
+	mov	#-1,crc1
+	mov	#-1,crc2
+	inc	AllFil
+
+	mov	(sp)+,r1
+	call	@TNPRCD(r1)
+	call	BakHead
+	return
+
+
+
+;јХвЮФ Stored
+;¤¤¤¤¤¤¤¤¤¤¤¤
+Storing:
+2$:	tst	bu1s
+	bne	1$
+	tst	bu2s
+	bne	1$
+	return
+1$:	call	GetInput
+	call	PutOutput
+	sub	#1,bu1s
+	sbc	bu2s
+	br	2$
+
+
+;·РЪалвШХ ТлеЮФЭле дРЩЫЮТ
+;¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤
+Closing::
+	.print	#niz
+	mov	allfil,r1
+	clr	r0
+	call	putlong
+	.ttyout	#15
+	.ttyout	#12
+
+	tst	Allfil
+	bne	123$
+	jmp	Purge
+123$:
+	;·РЯШбРЫШ ТбХ вЮ, звЮ ЭРЪаЮЯРЫШ
+	;¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤
+	tst	o.ptr
+	beq	1$
+	mov	o.ptr,r5
+	inc	r5	
+	asr	r5
+	.writw	#area,#0,o.Buf,r5,o.Block
+	bcc	1$
+	.print	#ErWri
+	jmp	ReStart
+1$:
+;	.close	#0	;**
+;	jmp	ReStart	;**
+
+	clr	i.Chan
+	mov	o.1,cat.1
+	mov	o.2,cat.2
+
+
+	;ѕСеЮФШЬ ТбХ бРаеШТШаЮТРЭЭлХ дРЩЫл, дЮаЬШагХЬ ЪРвРЫЮУ
+	;¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤
+	mov	AllFil,r5
+	clr	lclo1
+	clr	lclo2
+2$:
+	mov	lclo1,r1
+	mov	lclo2,r0
+
+	mov	r1,i.Ptr
+	bic	#^c<^b111111111>,i.Ptr
+	ashc	#-9.,r0
+	mov	r1,i.Block
+	.ttyout	#'ю
+	call	GetBlock
+
+	;ЗШвРХЬ ЫЮЪРЫмЭлЩ ЧРУЮЫЮТЮЪ
+	;¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤
+	mov	#eLcl-lcl,r2
+	mov	r2,llcl
+	mov	mesto,r1
+	3$:	call	GetInput
+		movb	r0,(r1)+
+		sob	r2,3$
+	mov	mesto,r2
+	add	#l$len-lcl,r2
+	mov	(r2),r2
+	mov	r2,r4
+	add	r2,llcl
+	333$:	call	Getinput
+		movb	r0,(r1)+
+		sob	r2,333$
+	;ДЮаЬШагХЬ ШЧ ЭХУЮ нЫХЬХЭв ЪРвРЫЮУР
+	;¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤
+	mov	mesto,r1
+	add	#l$m-lcl,r1
+	mov	#C$M,r2
+	mov	#22.,r3
+	4$:	movb	(r1)+,(r2)+	;take params
+		sob	r3,4$
+
+	mov	#C$REL,r2
+	movb	lclo1,(r2)+
+	movb	lclo1+1,(r2)+
+	movb	lclo2,(r2)+
+	movb	lclo2+1,(r2)+
+	5$:	movb	(r1)+,(r2)+
+		sob	r4,5$
+	mov	r2,lctr
+	sub	#ctr,lctr
+
+	;° вХЯХам ЧРЯШиХЬ ФРЭЭлХ Т ЪРвРЫЮУ
+	;¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤
+	mov	LCtr,r3
+	mov	#Ctr,r2
+	6$:	movb	(r2)+,r0
+		call	PutOutput
+		sob	r3,6$
+
+	;ІЮЧмЬХЬ бЬХйХЭШХ Ъ бЫХФгойХЬг дРЩЫг
+	;¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤
+	add	LLcl,lclo1
+	adc	lclo2
+	add	c$cs,lclo1
+	adc	lclo2
+	add	c$cs+2,lclo2
+	dec	r5
+	beq	22$
+	jmp	2$
+22$:
+
+	;БдЮаЬШагХЬ Ш ЧРЯШиХЬ ЪЮЭХж ФШаХЪвЮаШп
+	;¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤
+	mov	AllFil,e$ne
+	mov	AllFil,e$te
+	mov	o.1,r1
+	mov	o.2,r0
+	sub	cat.1,r1
+	sbc	r0
+	sub	cat.2,r0
+	mov	r1,e$scd
+	mov	r0,e$scd+2
+	mov	cat.1,e$rel
+	mov	cat.2,e$rel+2
+	mov	#Endr,r1
+	mov	#Lendr,r2
+	9$:	movb	(r1)+,r0
+		call	putoutput
+		sob	r2,9$
+
+	tst	o.ptr
+	beq	11$
+	mov	o.ptr,r4
+	inc	r4
+	asr	r4
+	.writw	#area,#0,o.Buf,r4,o.Block
+	bcc	11$
+	.print	#ErWri
+	jmp	ReStart
+11$:
+
+	.Close	#0
+	jmp	ReStart
+
+
+;·РЪалвм ТлеЮФЭЮЩ дРЩЫ СХЧ бЮЧФРЭШп
+;¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤
+Purge::	.print	#NotCre
+	.Purge	#0
+	jmp	ReStart
+
+
+;·РЯаЮб ЭР ТбвРТЪг
+;¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤
+QInsert:
+	tst	..q..
+	bne	1000$
+	clc
+	return
+
+1000$:	.print	#yorn
+	.print	#back
+
+	;ІТЮФШЬ бШЬТЮЫ
+	;¤¤¤¤¤¤¤¤¤¤¤¤¤
+1$:	.ttyin
+	cmp	#3,r0
+	bne	2$
+	jmp	Purge
+
+	;ІТХФХЭ бШЬТЮЫ ґР ?
+	;¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤
+2$:	bic	#240,r0
+	cmpb	#'Y,r0
+	bne	3$
+	.ttyout
+		;їаЮЯгбЪРХЬ ЖА+»Д ШЫШ ±°Жє
+		;¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤
+	4$:	.ttyin
+		cmpb	#177,r0
+		bne	5$
+		.print	#back
+		br	1$
+
+	5$:	cmpb	#15,r0
+		bne	4$
+
+	6$:	.ttyin
+		cmpb	#12,r0
+		bne	6$
+		.print	#back
+		call	999$
+		clc
+		return
+
+	;ІТХФХЭ бШЬТЮЫ CR ?
+	;¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤
+3$:	cmpb	#15,r0
+	bne	1$
+
+		;ѕЦШФРХЬ »Д
+		;¤¤¤¤¤¤¤¤¤¤
+	7$:	.ttyin
+		cmpb	#12,r0
+		bne	7$
+		call	999$
+		.ttyout	#15
+		.ttyout	#12
+		sec
+		return
+
+;¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤
+999$:	mov	#7,r2
+998$:	.print	#Back
+	sob	r2,998$
+	.ttyout	#40
+	.ttyout	#40
+	return
+
+;µбЫШ ЭРЦРвР ЪЫРТШиР ЯаХалТРЭШп, вЮ ТлЯЮЫЭШвм ЮЯаХФХЫХЭЭлХ ФХЩбвТШп
+;¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤
+BREAK::	tst	BSCCA
+	bmi	2$
+	return
+2$:	.print	#tBreak
+	jmp	RESTART
+
+
+
+;ІлТХбвШ ФЫШЭЭЮХ зШбЫЮ СХЧ ЧЭРЪР
+;¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤
+PutLong::
+	mov	r3,-(sp)
+	mov	r2,-(sp)
+	mov	r4,-(sp)
+	mov	#EndTab,r2
+	mov	#40,r4	;flag of left zero shoving
+1$:	clr	r3
+2$:	cmp	2(r2),r0
+	bhi	4$
+	blo	3$
+	cmp	(r2),r1
+	bhi	4$
+3$:	sub	(r2),r1
+	sbc	r0
+	sub	2(r2),r0
+	inc	r3
+	br	2$
+4$:	mov	r0,-(sp)
+	mov	r3,r0
+	beq	5$
+	mov	#'0,r4
+5$:	add	r4,r0
+	.ttyout
+	mov	(sp)+,r0
+	cmp	-(r2),-(r2)
+	cmp	#TabDiv,r2
+	blos	1$
+	cmp	#40,r4
+	bne	6$
+	.print	#bazero
+6$:	mov	#40,r0
+	.ttyout
+	mov	(sp)+,r4
+	mov	(sp)+,r2
+	mov	(sp)+,r3
+	return
+
+TabDiv:	.word	1,0,12,0,144,0,1750,0,23420,0,^b1000011010100000,1
+	.WORD	^b0100001001000000,17
+EndTab:	.word	^b1001011010000000,^b10011000
+
+
+	.psect	Data,gbl
+Line:	.Asciz	"¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤"
+Process:.Asciz	"› Working ... ›"
+NotCre:	.Asciz	"?ZIP-E-ДРЩЫ ЭХ бЮЧФРЭ"
+NoMem:	.Asciz	"?ZIP-E-ЅХв ЯРЬпвШ RT11SJ"
+bazero::	.Ascii	<33>"[D0"<200>
+dkpx::	.Ascii	"› "<200>
+flpx::	.Ascii	"  "<200>
+ptpx::	.Ascii	"ц "<200>
+tBreak::.Asciz	<15><12>"Break signal !!!"
+werh::	.Ascii	"  File name    Size      Method    Compressed Ratio%"<15><12>
+	.Asciz	"¤¤¤¤¤¤¤¤¤¤¤¤ ¤¤¤¤¤¤¤¤ ¤¤¤¤¤¤¤¤¤¤¤¤ ¤¤¤¤¤¤¤¤¤¤ ¤¤¤¤¤¤"
+niz::	.Ascii	"¤¤¤¤¤¤¤¤¤¤¤¤ ¤¤¤¤¤¤¤¤ ¤¤¤¤¤¤¤¤¤¤¤¤ ¤¤¤¤¤¤¤¤¤¤ ¤¤¤¤¤¤"<15><12>
+	.Ascii	"ДРЩЫЮТ:"<200>
+NoMemo::.Ascii	"?ZE-F-єЮЭзШЫРбм ЯРЬпвм ЯЮ 8k"<15><12>
+	.Asciz	"      їХаХЧРУагЧШвХ ЬРиШЭг"
+yorn::	.Ascii	" (Y/N)? N"
+back::	.Ascii	<33>"[D "
+jback::	.Ascii	<33>"[D"<200>
+tStored:.Ascii	"Storing  ..."<200>
+tShrink:.Ascii	"Shrunking..."<200>
+Letter::.Ascii	"¤\|/"
+	.even
+TNRMTD:	.word	tStored,tShrinked
+TNPRCD:	.word	Storing,ShrP
+
+Rmethod::0		;аХЪЮЬХЭФгХЬлЩ ЬХвЮФ РаеШТРжШШ
+
+OutLen::0		;ґЫШЭЭР Т СЫЮЪРе ТлеЮФЭЮУЮ дРЩЫР
+FilLen::0		;ґЫШЭЭР вХЪ. ТеЮФЭЮУЮ дРЩЫР Т СЫЮЪРе
+
+U1Size::	0
+U2Size::	0
+
+Allfil::	0
+All1Size::	0
+aLL2size::	0
+
+Bu1s::	0
+Bu2s::	0
+
+crc1::	0
+crc2::	0
+
+o.Buf::		0	;ГЪРЧРвХЫм ЭР ТеЮФЭЮЩ СгдХа
+o.Block::	0
+o.Ptr::		0
+oo.1::		0
+oo.2::		0
+o.1::		0
+o.2::		0
+
+cat.1:	0
+cat.2:	0
+
+i.Buf::		0	;ГЪРЧРвХЫм ЭР ТеЮФЭЮЩ СгдХа
+i.Block::	0
+i.Ptr::		0
+i.Let::		0
+i.Chan::	3	;ЅЮЬХа ТеЮФЭЮУЮ ЪРЭРЫР
+
+
+
+lclo1::	0
+lclo2::	0
+
+eclo1::
+elcl1::	0
+eclo2::
+elcl2::	0
+
+dattm::	0
+lof1::	0
+lof2::	0
+..a..:: 0		;ДЫРУ /a
+..q..::	0		;ДЫРУ /q
+..s..::	0		;ДЫРУ /s
+..c..:: 0		;ДЫРУ /c
+..g..::	0		;/g
+..d..::	0		;/g
+..astr:: 0
+..astn:: 0
+ppat::	0		;ГЪРЧРвХЫм ЭР ЯРввХаЭ
+cname:: .blkb	12.	;ЯХаХФХЫРЭЭЮХ ШЬп дРЩЫР
+npat::	0		;єЮЫШзХбвТЮ ЯРввХаЭЮТ
+dpat::	.blkb	100	;јРббШТ бблЫЮЪ ЭР ЯРввХаЭл
+FilNam::		;їХаТлЩ нЫХЬХЭв, ШЬп ТлеЮФЭЮУЮ дРЩЫР
+TXTDAT::.blkb	300	;јХбвЮ ФЫп ЯРввХаЭЮТ.
+name::	0,0,0,0,0,0	;ёЬп дРЩЫР Т Ascii
+name1::	0,0,0,0,0,0	;ёЬп дРЩЫР Т Ascii СХЧ ЯаЮСХЫЮТ
+dstblk::0,0,0,0
+OutSpc::.blkw	39.
+DefXT::	0,0,0,0
+	.ascii	" dk:"	;ґЮСРТЫпХвбп, ХбЫШ ЭРФЮ.
+LinBuf::.blkb	122	;ІеЮФЭЮЩ СгддХа ЪЫРТШРвгал
+Area::	.blkw	12
+BufDir::.blkw	512.	;±гдХа ФЫп звХЭШп бХУЬХЭвЮТ ФШаХЪвЮаШп
+FTKMEM::0
+bscca::0,0,0
+heap::	0
+heap1::	0
+Mesto::	0
+devspc::.limit
+	.end	Start
+                                                                                                                                                                                                                                                                                                                                                                                                             
